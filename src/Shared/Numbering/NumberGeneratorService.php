@@ -22,4 +22,14 @@ final class NumberGeneratorService
     {
         return sprintf('PRJ-%d-%04d', $year, $this->sequences->next('projects:' . $year));
     }
+
+    public function nextClientContractCode(int $year): string
+    {
+        return sprintf('CTR-%d-%04d', $year, $this->sequences->next('client_contracts:' . $year));
+    }
+
+    public function nextContractVariationCode(int $year): string
+    {
+        return sprintf('VAR-%d-%04d', $year, $this->sequences->next('contract_variations:' . $year));
+    }
 }

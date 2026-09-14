@@ -48,3 +48,17 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 - `units`, sections, and cost codes use lifecycle flags instead of deletion. Deactivation never cascades to child flags.
 - Inactive sections and units cannot be selected for new assignments. Existing relationships remain unchanged and may still be displayed historically.
 - Seed migrations are repeat-safe with no-op `ON DUPLICATE KEY UPDATE` clauses and never overwrite edited master data.
+
+## Client contracts
+
+- `client_contracts` stores one main commercial agreement per project, enforced by a unique `project_id`.
+- `contract_code` is an immutable internal yearly code generated from the year of `contract_date`; `contract_number` is the nullable commercial reference and must exist before activation.
+- Project/client relationships use `ON DELETE RESTRICT`; an optional deleted contact is set to `NULL`.
+- Pricing values are constrained by `pricing_method`. Contract execution, payments, BOQ lines, and profitability remain outside this header table.
+
+## Contract variations
+
+- `contract_variations` stores addendums, additional work, deductions, and commercial adjustments without changing the original contract value.
+- Monetary values are non-negative and `amount_effect` expresses increase or decrease. Non-financial addendums use `none` with `NULL` amount and markup.
+- Reference numbers are unique per parent contract while multiple `NULL` values are allowed.
+- Approval and cancellation record their timestamp and authenticated user. Approved increases and decreases are derived for display and are not persisted on the contract.

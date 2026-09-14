@@ -1,0 +1,5 @@
+<?php
+declare(strict_types=1);
+namespace App\Modules\ContractVariations\Validators;
+use App\Modules\ContractVariations\DTOs\ContractVariationTableQuery;
+final class ContractVariationTableQueryValidator { public function validate(array $i,int $contractId):ContractVariationTableQuery{$cols=['variation_code','variation_number','variation_type','title','variation_date','amount','amount_effect','status'];$idx=max(0,(int)($i['order'][0]['column']??0));$type=(string)($i['variation_type']??'');$status=(string)($i['status']??'');$effect=(string)($i['amount_effect']??'');return new ContractVariationTableQuery(max(0,(int)($i['draw']??0)),max(0,(int)($i['start']??0)),min(100,max(10,(int)($i['length']??10))),mb_substr(trim((string)($i['search']['value']??'')),0,100),$cols[$idx]??'variation_code',strtolower((string)($i['order'][0]['dir']??'asc'))==='desc'?'DESC':'ASC',max(1,$contractId),in_array($type,ContractVariationValidator::TYPES,true)?$type:null,in_array($status,['draft','approved','cancelled'],true)?$status:null,in_array($effect,ContractVariationValidator::EFFECTS,true)?$effect:null);} }

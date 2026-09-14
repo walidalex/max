@@ -14,6 +14,8 @@ use App\Modules\Vendors\Controllers\VendorController;
 use App\Modules\Vendors\Controllers\VendorContactController;
 use App\Modules\Projects\Controllers\ProjectController;
 use App\Modules\CostStructure\Controllers\CostStructureController;
+use App\Modules\ClientContracts\Controllers\ClientContractController;
+use App\Modules\ContractVariations\Controllers\ContractVariationController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -80,3 +82,18 @@ $app->router()->post('/settings/cost-structure/codes/{id}/activate',[CostStructu
 $app->router()->post('/settings/cost-structure/units',[CostStructureController::class,'storeUnit'],['auth','permission:cost_structure.manage']);
 $app->router()->post('/settings/cost-structure/units/{id}',[CostStructureController::class,'updateUnit'],['auth','permission:cost_structure.manage']);
 $app->router()->post('/settings/cost-structure/units/{id}/activate',[CostStructureController::class,'toggleUnit'],['auth','permission:cost_structure.manage']);
+$app->router()->get('/contracts',[ClientContractController::class,'index'],['auth','permission:client_contracts.view']);
+$app->router()->get('/contracts/create',[ClientContractController::class,'create'],['auth','permission:client_contracts.create']);
+$app->router()->post('/contracts',[ClientContractController::class,'store'],['auth','permission:client_contracts.create']);
+$app->router()->get('/contracts/{id}',[ClientContractController::class,'show'],['auth','permission:client_contracts.view']);
+$app->router()->get('/contracts/{id}/edit',[ClientContractController::class,'edit'],['auth','permission:client_contracts.edit']);
+$app->router()->post('/contracts/{id}/edit',[ClientContractController::class,'update'],['auth','permission:client_contracts.edit']);
+$app->router()->post('/contracts/{id}/status',[ClientContractController::class,'status'],['auth','permission:client_contracts.change_status']);
+$app->router()->get('/contracts/{contract_id}/variations',[ContractVariationController::class,'index'],['auth','permission:contract_variations.view']);
+$app->router()->get('/contracts/{contract_id}/variations/create',[ContractVariationController::class,'create'],['auth','permission:contract_variations.create']);
+$app->router()->post('/contracts/{contract_id}/variations',[ContractVariationController::class,'store'],['auth','permission:contract_variations.create']);
+$app->router()->get('/contract-variations/{id}',[ContractVariationController::class,'show'],['auth','permission:contract_variations.view']);
+$app->router()->get('/contract-variations/{id}/edit',[ContractVariationController::class,'edit'],['auth','permission:contract_variations.edit']);
+$app->router()->post('/contract-variations/{id}/edit',[ContractVariationController::class,'update'],['auth','permission:contract_variations.edit']);
+$app->router()->post('/contract-variations/{id}/approve',[ContractVariationController::class,'approve'],['auth','permission:contract_variations.approve']);
+$app->router()->post('/contract-variations/{id}/cancel',[ContractVariationController::class,'cancel'],['auth','permission:contract_variations.cancel']);

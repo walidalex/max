@@ -33,3 +33,11 @@ The Projects module owns project master data only. Codes use atomic yearly seque
 ## Cost structure
 
 The Cost Structure module manages work sections, cost codes, and units through the standard controller, validator/DTO, service, and repository flow. Lifecycle and uniqueness rules live in the service, while all SQL remains in repositories. The Arabic RTL management page groups cost codes by expandable work section and restricts selectors to active master records.
+
+## Client contracts
+
+Client Contracts owns the single main agreement header for each project. Internal codes use a yearly atomic sequence based on the contract date. Project, client, and contact consistency is repeated server-side. Commercial fields become immutable after draft activation, while future commercial changes belong to addendums. Projects with a contract cannot change client through normal project editing.
+
+## Contract variations
+
+Contract Variations is the shared commercial header for addendums and variations. Creation is limited to active or suspended contracts. Approval and cancellation are separate permission-protected actions with authenticated-user audit fields. Approved commercial data is immutable except for administrative notes, and the original contract value is never updated.

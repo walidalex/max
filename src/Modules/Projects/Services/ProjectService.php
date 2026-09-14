@@ -7,7 +7,7 @@ final class ProjectService
  private const TRANSITIONS=['planning'=>['active','cancelled'],'active'=>['on_hold','completed','cancelled'],'on_hold'=>['active','cancelled'],'completed'=>[],'cancelled'=>[]];
  public function __construct(private readonly ProjectRepository $projects,private readonly NumberGeneratorService $numbers,private readonly Database $db){}
  public function find(int $id):array{return $this->projects->find($id)??throw new BusinessRuleException('المشروع غير موجود.');}
- public function save(ProjectData $d,?int $id=null):int{$this->relations($d);return $this->db->transaction(function()use($d,$id){if($id===null)return $this->projects->create($this->numbers->nextProjectCode((int)date('Y')),$d);$this->find($id);$this->projects->update($id,$d);return $id;});}
+ public function save(ProjectData $d,?int $id=null):int{$this->relations($d);return $this->db->transaction(function()use($d,$id){if($id===null)return $this->projects->create($this->numbers->nextProjectCode((int)date('Y')),$d);$current=$this->find($id);if((int)$current['client_id']!==$d->clientId&&$this->projects->hasClientContract($id))throw new BusinessRuleException('لا يمكن تغيير عميل مشروع مرتبط بعقد عميل.');$this->projects->update($id,$d);return $id;});}
  public function changeStatus(int $id,string $status):void{$p=$this->find($id);$current=(string)$p['status'];if(!in_array($status,self::TRANSITIONS[$current]??[],true))throw new BusinessRuleException('لا يمكن تنفيذ انتقال حالة المشروع المطلوب.');$this->projects->changeStatus($id,$status);}
  public function allowedTransitions(string $status):array{return self::TRANSITIONS[$status]??[];}
  public function referenceData():array{return ['clients'=>$this->projects->clients(),'managers'=>$this->projects->managers()];}

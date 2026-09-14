@@ -15,6 +15,7 @@ final class ProjectRepository
  public function clientExists(int $id):bool{return $this->exists('SELECT 1 FROM clients WHERE id=? LIMIT 1',[$id]);}
  public function contactBelongsTo(int $id,int $clientId):bool{return $this->exists('SELECT 1 FROM client_contacts WHERE id=? AND client_id=? LIMIT 1',[$id,$clientId]);}
  public function activeManagerExists(int $id):bool{return $this->exists('SELECT 1 FROM users WHERE id=? AND is_active=1 LIMIT 1',[$id]);}
+ public function hasClientContract(int $id):bool{return $this->exists('SELECT 1 FROM client_contracts WHERE project_id=? LIMIT 1',[$id]);}
  public function create(string $code,ProjectData $d):int
  {
   $sql='INSERT INTO projects(project_code,name,client_id,primary_contact_id,project_manager_id,project_type,status,start_date,expected_end_date,actual_end_date,site_address,city,area,description,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
