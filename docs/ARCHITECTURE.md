@@ -49,3 +49,9 @@ Contract BOQ preserves the original scope as section, item, and unit snapshots w
 ## Subcontracts
 
 Subcontracts and SubcontractBoq are isolated modules for project execution agreements. They reuse the validated BOQ snapshot and DECIMAL patterns without sharing client BOQ tables. Vendor eligibility is enforced server-side for new assignments while historical relationships remain readable.
+
+## Subcontract progress certificates
+
+`SubcontractCertificates` owns earned-work certification separately from contracts, BOQ definition, payments, and accounting. Approval locks the parent subcontract row, re-reads approved history, recalculates all DECIMAL quantities or percentages, validates contractual ceilings, and freezes audit and earned-value snapshots in one transaction. `getApprovedEarnedValue()` is the future payment integration boundary.
+
+Architectural invariant: cumulative subcontractor payments must never exceed cumulative approved earned work. A future payment Service must enforce this server-side while holding the relevant transaction locks; UI validation is not sufficient.

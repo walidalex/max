@@ -19,6 +19,7 @@ use App\Modules\ContractVariations\Controllers\ContractVariationController;
 use App\Modules\ContractBoq\Controllers\ContractBoqController;
 use App\Modules\Subcontracts\Controllers\SubcontractController;
 use App\Modules\SubcontractBoq\Controllers\SubcontractBoqController;
+use App\Modules\SubcontractCertificates\Controllers\SubcontractCertificateController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -127,3 +128,11 @@ $app->router()->post('/subcontracts/{subcontract_id}/boq/items',[SubcontractBoqC
 $app->router()->post('/subcontracts/{subcontract_id}/boq/items/{item_id}',[SubcontractBoqController::class,'item'],['auth','permission:subcontract_boq.manage']);
 $app->router()->post('/subcontracts/{subcontract_id}/boq/items/{item_id}/remove',[SubcontractBoqController::class,'removeItem'],['auth','permission:subcontract_boq.manage']);
 $app->router()->post('/subcontracts/{subcontract_id}/boq/approve',[SubcontractBoqController::class,'approve'],['auth','permission:subcontract_boq.approve']);
+$app->router()->get('/subcontracts/{subcontract_id}/certificates',[SubcontractCertificateController::class,'index'],['auth','permission:subcontract_certificates.view']);
+$app->router()->get('/subcontracts/{subcontract_id}/certificates/create',[SubcontractCertificateController::class,'create'],['auth','permission:subcontract_certificates.create']);
+$app->router()->post('/subcontracts/{subcontract_id}/certificates',[SubcontractCertificateController::class,'store'],['auth','permission:subcontract_certificates.create']);
+$app->router()->get('/subcontract-certificates/{id}',[SubcontractCertificateController::class,'show'],['auth','permission:subcontract_certificates.view']);
+$app->router()->get('/subcontract-certificates/{id}/edit',[SubcontractCertificateController::class,'edit'],['auth','permission:subcontract_certificates.edit']);
+$app->router()->post('/subcontract-certificates/{id}/edit',[SubcontractCertificateController::class,'update'],['auth','permission:subcontract_certificates.edit']);
+$app->router()->post('/subcontract-certificates/{id}/approve',[SubcontractCertificateController::class,'approve'],['auth','permission:subcontract_certificates.approve']);
+$app->router()->post('/subcontract-certificates/{id}/cancel',[SubcontractCertificateController::class,'cancel'],['auth','permission:subcontract_certificates.cancel']);

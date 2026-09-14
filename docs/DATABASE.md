@@ -75,3 +75,12 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 - Projects may have multiple subcontractor agreements. Commercial numbers are unique only within project, vendor, and number while `NULL` may repeat.
 - New agreements require an active vendor of type `subcontractor` or `both`; later vendor deactivation does not invalidate historical contracts.
 - Subcontract BOQ uses separate snapshot tables and generated DECIMAL totals. BOQ approval atomically synchronizes value only for BOQ-priced subcontracts.
+
+## Subcontract progress certificates
+
+- `subcontract_progress_certificates` stores immutable yearly system codes, optional subcontract-scoped business numbers, lifecycle/audit data, and frozen approval earned-value totals.
+- BOQ certificates snapshot every approved original BOQ line in `subcontract_progress_items`. Only current quantity is entered; contractual quantity, rate, prior quantity, cumulative quantity, and amounts are system controlled.
+- Lump-sum certificates store explicit previous/current/cumulative progress percentages on the header and do not create artificial item rows.
+- Only approved certificates contribute to certified quantities and earned value. Draft and cancelled certificates never contribute.
+- Approved certificates cannot be edited, cancelled, or deleted. A future correction requires a dedicated reversal mechanism.
+- The original approved BOQ is never changed by progress certification. Future scope or quantity changes belong to a separate Subcontract Variations module and must later participate in effective certifiable-quantity calculations.
