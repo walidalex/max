@@ -1,0 +1,1 @@
+'use strict';document.addEventListener('DOMContentLoaded',()=>{const amount=document.getElementById('payment-amount'),available=document.getElementById('available-payment');if(!amount||!available)return;const check=()=>amount.classList.toggle('is-invalid',Number(amount.value)>Number(available.dataset.value));amount.addEventListener('input',check);check();});

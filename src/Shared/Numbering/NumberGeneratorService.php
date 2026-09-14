@@ -38,4 +38,9 @@ final class NumberGeneratorService
     {
         return sprintf('SPC-%d-%04d', $year, $this->sequences->next('subcontract_progress_certificates:' . $year));
     }
+
+    public function nextSubcontractPaymentCode(int $year): string
+    {
+        return sprintf('SPAY-%d-%04d', $year, $this->sequences->next('subcontract_payments:' . $year));
+    }
 }

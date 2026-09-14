@@ -152,6 +152,12 @@ final class SubcontractCertificateRepository
         return (string) ($row['cumulative_earned_value'] ?? '0.00');
     }
 
+    public function approvedProgressPercentage(int $subcontractId): string
+    {
+        $row = $this->one("SELECT CASE WHEN s.pricing_method='boq' THEN CASE WHEN s.contract_value>0 THEN ROUND(COALESCE(c.cumulative_earned_value,0)*100/s.contract_value,4) ELSE 0 END ELSE COALESCE(c.cumulative_progress_percentage,0) END progress FROM subcontracts s LEFT JOIN subcontract_progress_certificates c ON c.id=(SELECT c2.id FROM subcontract_progress_certificates c2 WHERE c2.subcontract_id=s.id AND c2.status='approved' ORDER BY c2.certificate_date DESC,c2.id DESC LIMIT 1) WHERE s.id=?", [$subcontractId]);
+        return (string) ($row['progress'] ?? '0.0000');
+    }
+
     public function dataTable(SubcontractCertificateTableQuery $query): array
     {
         $where = ['c.subcontract_id=?'];

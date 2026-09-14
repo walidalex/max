@@ -20,6 +20,7 @@ use App\Modules\ContractBoq\Controllers\ContractBoqController;
 use App\Modules\Subcontracts\Controllers\SubcontractController;
 use App\Modules\SubcontractBoq\Controllers\SubcontractBoqController;
 use App\Modules\SubcontractCertificates\Controllers\SubcontractCertificateController;
+use App\Modules\SubcontractPayments\Controllers\SubcontractPaymentController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -44,7 +45,7 @@ $app->router()->post('/access/roles/{id}/permissions',[RoleController::class,'as
 $app->router()->get('/access/permissions',[PermissionController::class,'index'],['auth','permission:permissions.view']);
 $app->router()->get('/settings/company',[CompanyProfileController::class,'show'],['auth','permission:company_profile.view']);
 $app->router()->post('/settings/company',[CompanyProfileController::class,'update'],['auth','permission:company_profile.edit']);
-$app->router()->get('/settings/company/logo',[CompanyProfileController::class,'logo'],['auth','permission:company_profile.view']);
+$app->router()->get('/settings/company/logo',[CompanyProfileController::class,'logo'],['auth']);
 $app->router()->get('/clients',[ClientController::class,'index'],['auth','permission:clients.view']);
 $app->router()->get('/clients/create',[ClientController::class,'create'],['auth','permission:clients.create']);
 $app->router()->post('/clients',[ClientController::class,'store'],['auth','permission:clients.create']);
@@ -136,3 +137,11 @@ $app->router()->get('/subcontract-certificates/{id}/edit',[SubcontractCertificat
 $app->router()->post('/subcontract-certificates/{id}/edit',[SubcontractCertificateController::class,'update'],['auth','permission:subcontract_certificates.edit']);
 $app->router()->post('/subcontract-certificates/{id}/approve',[SubcontractCertificateController::class,'approve'],['auth','permission:subcontract_certificates.approve']);
 $app->router()->post('/subcontract-certificates/{id}/cancel',[SubcontractCertificateController::class,'cancel'],['auth','permission:subcontract_certificates.cancel']);
+$app->router()->get('/subcontracts/{subcontract_id}/payments',[SubcontractPaymentController::class,'index'],['auth','permission:subcontract_payments.view']);
+$app->router()->get('/subcontracts/{subcontract_id}/payments/create',[SubcontractPaymentController::class,'create'],['auth','permission:subcontract_payments.create']);
+$app->router()->post('/subcontracts/{subcontract_id}/payments',[SubcontractPaymentController::class,'store'],['auth','permission:subcontract_payments.create']);
+$app->router()->get('/subcontract-payments/{id}',[SubcontractPaymentController::class,'show'],['auth','permission:subcontract_payments.view']);
+$app->router()->get('/subcontract-payments/{id}/edit',[SubcontractPaymentController::class,'edit'],['auth','permission:subcontract_payments.edit']);
+$app->router()->post('/subcontract-payments/{id}/edit',[SubcontractPaymentController::class,'update'],['auth','permission:subcontract_payments.edit']);
+$app->router()->post('/subcontract-payments/{id}/post',[SubcontractPaymentController::class,'post'],['auth','permission:subcontract_payments.post']);
+$app->router()->post('/subcontract-payments/{id}/cancel',[SubcontractPaymentController::class,'cancel'],['auth','permission:subcontract_payments.cancel']);

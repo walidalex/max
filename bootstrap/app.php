@@ -5,6 +5,9 @@ declare(strict_types=1);
 use App\Core\Application;
 use App\Core\Config;
 use App\Core\Environment;
+use App\Core\Http\Session;
+use App\Core\View\View;
+use App\Modules\CompanyProfile\Repositories\CompanyProfileRepository;
 
 $basePath = dirname(__DIR__);
 
@@ -31,6 +34,21 @@ $config = Config::load($basePath . '/config');
 
 $app = new Application($basePath, $config);
 $app->boot();
+
+/** @var View $view */
+$view = $app->make(View::class);
+$view->shareUsing(static function () use ($app): array {
+    /** @var Session $session */
+    $session = $app->make(Session::class);
+    if (!is_array($session->get('auth_user'))) {
+        return [];
+    }
+
+    /** @var CompanyProfileRepository $profiles */
+    $profiles = $app->make(CompanyProfileRepository::class);
+    $company = $profiles->get();
+    return $company === null ? [] : ['companyBrand' => $company];
+});
 
 require $basePath . '/routes/web.php';
 require $basePath . '/routes/api.php';

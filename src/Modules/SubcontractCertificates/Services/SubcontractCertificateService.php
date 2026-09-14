@@ -125,6 +125,12 @@ final class SubcontractCertificateService
         return $this->certificates->approvedEarnedValue($subcontractId);
     }
 
+    public function getApprovedProgressPercentage(int $subcontractId): string
+    {
+        $this->subcontract($subcontractId);
+        return $this->certificates->approvedProgressPercentage($subcontractId);
+    }
+
     public function certificateItems(int $certificateId): array
     {
         $this->find($certificateId);

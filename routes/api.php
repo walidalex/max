@@ -11,6 +11,7 @@ use App\Modules\ClientContracts\Controllers\ClientContractDataTableController;
 use App\Modules\ClientContracts\Controllers\ClientContractReferenceDataController;
 use App\Modules\ContractVariations\Controllers\ContractVariationDataTableController;
 use App\Modules\SubcontractCertificates\Controllers\SubcontractCertificateDataTableController;
+use App\Modules\SubcontractPayments\Controllers\SubcontractPaymentDataTableController;
 
 $app->router()->get('/api/health', [FoundationController::class, 'health']);
 $app->router()->get('/api/clients', [ClientDataTableController::class, 'index'], ['auth', 'permission:clients.view']);
@@ -21,3 +22,4 @@ $app->router()->get('/api/contracts',[ClientContractDataTableController::class,'
 $app->router()->get('/api/contracts/client-contacts',[ClientContractReferenceDataController::class,'contacts'],['auth','permission:client_contracts.create']);
 $app->router()->get('/api/contracts/{contract_id}/variations',[ContractVariationDataTableController::class,'index'],['auth','permission:contract_variations.view']);
 $app->router()->get('/api/subcontracts/{subcontract_id}/certificates',[SubcontractCertificateDataTableController::class,'index'],['auth','permission:subcontract_certificates.view']);
+$app->router()->get('/api/subcontracts/{subcontract_id}/payments',[SubcontractPaymentDataTableController::class,'index'],['auth','permission:subcontract_payments.view']);

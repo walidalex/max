@@ -1,7 +1,16 @@
 <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
     <div class="container-fluid">
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="فتح القائمة"><span class="navbar-toggler-icon"></span></button>
-        <h1 class="navbar-brand navbar-brand-autodark"><a href="/" class="text-decoration-none"><i class="ti ti-building-community ms-2"></i>نظام المقاولات والديكور</a></h1>
+        <h1 class="navbar-brand navbar-brand-autodark">
+            <a href="/" class="app-brand text-decoration-none">
+                <?php if (is_array($companyBrand ?? null) && !empty($companyBrand['logo_path'])): ?>
+                    <img class="app-brand-logo" src="/settings/company/logo?v=<?= urlencode((string) ($companyBrand['updated_at'] ?? '')) ?>" alt="شعار <?= e($companyBrand['name'] ?? 'الشركة') ?>">
+                <?php else: ?>
+                    <i class="ti ti-building-community app-brand-icon" aria-hidden="true"></i>
+                <?php endif; ?>
+                <span class="app-brand-name"><?= e($companyBrand['name'] ?? 'نظام المقاولات والديكور') ?></span>
+            </a>
+        </h1>
         <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">
                 <li class="nav-item"><a class="nav-link active" href="/"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-home"></i></span><span class="nav-link-title">البداية</span></a></li>

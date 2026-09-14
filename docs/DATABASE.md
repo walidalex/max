@@ -84,3 +84,9 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 - Only approved certificates contribute to certified quantities and earned value. Draft and cancelled certificates never contribute.
 - Approved certificates cannot be edited, cancelled, or deleted. A future correction requires a dedicated reversal mechanism.
 - The original approved BOQ is never changed by progress certification. Future scope or quantity changes belong to a separate Subcontract Variations module and must later participate in effective certifiable-quantity calculations.
+
+## Subcontract payments
+
+- Payments snapshot approved progress, earned value, previous posted payments, and the available ceiling at posting.
+- Only posted payments consume entitlement. Draft and cancelled payments do not count, and posted payments are immutable.
+- Posting serializes on the subcontract row and enforces both the earned-value ceiling and non-retroactive payment dates. Draft dates cannot move outside the year encoded in their immutable payment code.

@@ -55,3 +55,7 @@ Subcontracts and SubcontractBoq are isolated modules for project execution agree
 `SubcontractCertificates` owns earned-work certification separately from contracts, BOQ definition, payments, and accounting. Approval locks the parent subcontract row, re-reads approved history, recalculates all DECIMAL quantities or percentages, validates contractual ceilings, and freezes audit and earned-value snapshots in one transaction. `getApprovedEarnedValue()` is the future payment integration boundary.
 
 Architectural invariant: cumulative subcontractor payments must never exceed cumulative approved earned work. A future payment Service must enforce this server-side while holding the relevant transaction locks; UI validation is not sufficient.
+
+## Subcontract payments
+
+`SubcontractPayments` consumes approved entitlement from `SubcontractCertificates` and never creates or modifies progress. Posting uses the subcontract row as the shared financial lock, re-reads entitlement and posted totals, freezes snapshots, and enforces `cumulative posted payments <= cumulative approved earned value` in one transaction.

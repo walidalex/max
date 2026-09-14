@@ -24,6 +24,8 @@
 - Do not change the established project architecture without a clear reason.
 - Keep code clean, reusable, consistent, and easy for another developer to maintain.
 - Update migrations and relevant documentation when database structure or architecture changes.
+- Complex modules with important business or financial invariants should include a concise `README.md` describing their purpose, workflow, statuses, critical rules, integrations, and future extension points.
+- Keep module README files concise and update them whenever core business behavior changes; do not create them blindly for simple CRUD modules.
 - Before handoff, run:
   - `composer lint`
   - `composer test`

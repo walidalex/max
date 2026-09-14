@@ -4,7 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="نظام إدارة المقاولات والتصميم الداخلي">
-    <title><?= e($title ?? $appName) ?> | <?= e($appName) ?></title>
+    <title><?= e($title ?? $appName) ?> | <?= e($companyBrand['name'] ?? $appName) ?></title>
+    <link rel="icon" type="image/png" href="/assets/images/favicon.png">
     <link rel="stylesheet" href="/assets/vendor/tabler/tabler.rtl.min.css">
     <link rel="stylesheet" href="/assets/vendor/tabler-icons/tabler-icons.min.css">
     <link rel="stylesheet" href="/assets/vendor/sweetalert2/sweetalert2.min.css">
@@ -14,7 +15,7 @@
 </head>
 <body>
 <div class="page">
-    <?= $this->component('sidebar') ?>
+    <?= $this->component('sidebar', ['companyBrand' => $companyBrand ?? null]) ?>
     <div class="page-wrapper">
         <?= $this->component('navbar', ['title' => $title ?? $appName, 'currentUser' => $currentUser ?? null, 'csrfToken' => $csrfToken]) ?>
         <main class="page-body">

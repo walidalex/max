@@ -10,10 +10,18 @@ use App\Core\Http\Csrf;
 
 final class View
 {
+    /** @var (\Closure(): array<string, mixed>)|null */
+    private ?\Closure $sharedDataProvider = null;
+
     public function __construct(private readonly string $path, private readonly Config $config, private readonly Session $session, private readonly Csrf $csrf) {}
+
+    /** @param \Closure(): array<string, mixed> $provider */
+    public function shareUsing(\Closure $provider): void { $this->sharedDataProvider = $provider; }
     /** @param array<string, mixed> $data */
     public function render(string $view, array $data = [], string $layout = 'layouts/app'): string
     {
+        $sharedData = $this->sharedDataProvider !== null ? ($this->sharedDataProvider)() : [];
+        $data = array_merge($sharedData, $data);
         $data['csrfToken'] ??= $this->csrf->token();
         $content = $this->renderFile($view, $data);
         return $this->renderFile($layout, array_merge($data, ['content' => $content, 'appName' => $this->config->get('app.name'), 'currentUser' => $this->session->get('auth_user'), 'flash' => $this->session->pullFlash('alert')]));
