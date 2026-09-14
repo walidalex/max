@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Vendors\Services;
+
+use App\Core\Database\Database;
+use App\Core\Exceptions\BusinessRuleException;
+use App\Modules\Vendors\DTOs\VendorData;
+use App\Modules\Vendors\DTOs\VendorTableQuery;
+use App\Modules\Vendors\Repositories\VendorRepository;
+use App\Shared\Numbering\NumberGeneratorService;
+
+final class VendorService
+{
+    public function __construct(
+        private readonly VendorRepository $vendors,
+        private readonly NumberGeneratorService $numbers,
+        private readonly Database $database,
+    ) {}
+
+    /** @return array<string, mixed> */
+    public function find(int $id): array
+    {
+        return $this->vendors->find($id) ?? throw new BusinessRuleException('المورد أو مقاول الباطن غير موجود.');
+    }
+
+    public function save(VendorData $data, ?int $id = null): int
+    {
+        return $this->database->transaction(function () use ($data, $id): int {
+            if ($id === null) {
+                return $this->vendors->create($this->numbers->nextVendorCode(), $data);
+            }
+            $this->find($id);
+            $this->vendors->update($id, $data);
+            return $id;
+        });
+    }
+
+    public function setActive(int $id, bool $active): void
+    {
+        $this->find($id);
+        $this->vendors->setActive($id, $active);
+    }
+
+    /** @return array{draw: int, recordsTotal: int, recordsFiltered: int, data: list<array<string, mixed>>} */
+    public function dataTable(VendorTableQuery $query): array
+    {
+        $result = $this->vendors->dataTable($query);
+        return ['draw' => $query->draw, 'recordsTotal' => $result['recordsTotal'], 'recordsFiltered' => $result['recordsFiltered'], 'data' => $result['rows']];
+    }
+}

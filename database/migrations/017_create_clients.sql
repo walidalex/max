@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS clients (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    client_code VARCHAR(30) NOT NULL,
+    client_type VARCHAR(20) NOT NULL,
+    name VARCHAR(190) NULL,
+    company_name VARCHAR(190) NULL,
+    tax_number VARCHAR(80) NULL,
+    commercial_registration VARCHAR(80) NULL,
+    phone VARCHAR(30) NULL,
+    mobile VARCHAR(30) NULL,
+    email VARCHAR(190) NULL,
+    address VARCHAR(500) NULL,
+    notes TEXT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_clients_client_code (client_code),
+    KEY idx_clients_type_status (client_type, is_active),
+    KEY idx_clients_name (name),
+    KEY idx_clients_company_name (company_name),
+    CONSTRAINT chk_clients_client_type CHECK (client_type IN ('individual', 'company'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

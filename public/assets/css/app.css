@@ -1,0 +1,5 @@
+:root { --app-sidebar-width: 15rem; }
+body { font-family: Tahoma, Arial, sans-serif; }
+.navbar-vertical .navbar-brand { white-space: normal; line-height: 1.5; }
+.ti { font-size: 1.25rem; vertical-align: -0.2em; }
+[dir="rtl"] .ts-control { text-align: right; }

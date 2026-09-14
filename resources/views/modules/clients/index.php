@@ -1,0 +1,16 @@
+<div class="page-header mb-4">
+    <div class="row align-items-center">
+        <div class="col"><div class="page-pretitle">إدارة البيانات الأساسية</div><h2 class="page-title">العملاء</h2></div>
+        <?php if ($canCreate): ?><div class="col-auto"><a class="btn btn-primary" href="/clients/create"><i class="ti ti-plus ms-2"></i>إضافة عميل</a></div><?php endif; ?>
+    </div>
+</div>
+<div class="card" id="clients-table-card" data-can-edit="<?=$canEdit?'1':'0'?>" data-can-activate="<?=$canActivate?'1':'0'?>" data-csrf="<?=e($csrfToken)?>">
+    <div class="card-body border-bottom"><div class="row g-3">
+        <div class="col-md-3"><label class="form-label" for="client-type-filter">نوع العميل</label><select id="client-type-filter" class="form-select"><option value="">الكل</option><option value="individual">فرد</option><option value="company">شركة</option></select></div>
+        <div class="col-md-3"><label class="form-label" for="client-status-filter">الحالة</label><select id="client-status-filter" class="form-select"><option value="">الكل</option><option value="active">نشط</option><option value="inactive">غير نشط</option></select></div>
+    </div></div>
+    <div class="table-responsive p-3"><table id="clients-table" class="table table-vcenter card-table w-100">
+        <thead><tr><th>كود العميل</th><th>اسم العميل</th><th>النوع</th><th>الهاتف / المحمول</th><th>جهة الاتصال الأساسية</th><th>الحالة</th><th>الإجراءات</th></tr></thead>
+    </table></div>
+</div>
+<script src="/assets/js/modules/clients.js" defer></script>

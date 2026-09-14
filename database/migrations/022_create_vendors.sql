@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS vendors (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    vendor_code VARCHAR(30) NOT NULL,
+    vendor_type VARCHAR(20) NOT NULL,
+    name VARCHAR(190) NOT NULL,
+    tax_number VARCHAR(80) NULL,
+    commercial_registration VARCHAR(80) NULL,
+    phone VARCHAR(30) NULL,
+    mobile VARCHAR(30) NULL,
+    email VARCHAR(190) NULL,
+    address VARCHAR(500) NULL,
+    notes TEXT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_vendors_vendor_code (vendor_code),
+    KEY idx_vendors_type_status (vendor_type, is_active),
+    KEY idx_vendors_name (name),
+    CONSTRAINT chk_vendors_vendor_type CHECK (vendor_type IN ('supplier', 'subcontractor', 'both'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

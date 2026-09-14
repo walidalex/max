@@ -1,0 +1,28 @@
+{
+    "name": "app/contracting-interior-erp",
+    "description": "Clean modular monolith foundation for a contracting and interior design ERP.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.4",
+        "ext-fileinfo": "*",
+        "ext-mysqli": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        },
+        "files": [
+            "src/Shared/helpers.php"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "scripts": {
+        "test": "php tests/run.php",
+        "lint": "php tools/lint.php",
+        "db:check": "php tools/check-database.php"
+    }
+}

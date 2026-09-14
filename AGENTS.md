@@ -1,0 +1,30 @@
+# Project Working Agreement
+
+- Use PHP 8.4+, `declare(strict_types=1)`, PSR-4 autoloading, and English identifiers.
+- Keep all user-facing text in Arabic and all UI layouts RTL.
+- Follow this application flow:
+  `Route -> Controller -> Validator/DTO -> Service -> Repository -> MySQLi`.
+- Keep controllers thin and business logic inside Services.
+- Keep SQL inside Repositories only.
+- Use object-oriented MySQLi prepared statements for every variable SQL value.
+- Use transactions for operations that modify multiple related records.
+- Keep modules isolated under `src/Modules`.
+- Shared infrastructure belongs in `src/Core`; reusable business-neutral code belongs in `src/Shared`.
+- Use DataTables for data-heavy listing pages that require search, sorting, pagination, or export.
+- Configure DataTables consistently for Arabic RTL layouts and reuse a shared initialization helper.
+- Prefer server-side processing for large datasets; do not load large tables entirely into the browser.
+- Do not add alternative table/grid libraries unless DataTables cannot meet a concrete requirement.
+- Reuse existing components, helpers, and libraries before creating new ones.
+- Use the existing frontend stack: Tabler RTL, SweetAlert2, Tom Select, and DataTables.
+- Do not add frameworks, build tools, or dependencies unless there is a clear project need.
+- If a library is incompatible, outdated, or unsuitable, explain the issue before replacing or adding another library.
+- Maintain CSRF protection, validation, authorization, safe sessions, output escaping, and secure file handling.
+- Never expose technical errors, credentials, SQL details, or stack traces to production users.
+- Never commit `.env`, credentials, logs, uploads, `vendor`, or `node_modules`.
+- Do not change the established project architecture without a clear reason.
+- Keep code clean, reusable, consistent, and easy for another developer to maintain.
+- Update migrations and relevant documentation when database structure or architecture changes.
+- Before handoff, run:
+  - `composer lint`
+  - `composer test`
+  - `npm run assets:build`
