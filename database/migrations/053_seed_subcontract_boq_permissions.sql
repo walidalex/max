@@ -1,0 +1,1 @@
+INSERT INTO permissions(code,name,module,is_system) VALUES('subcontract_boq.view','عرض جدول كميات مقاول الباطن','subcontract_boq',1),('subcontract_boq.manage','إدارة جدول كميات مقاول الباطن','subcontract_boq',1),('subcontract_boq.approve','اعتماد جدول كميات مقاول الباطن','subcontract_boq',1) ON DUPLICATE KEY UPDATE code=VALUES(code);

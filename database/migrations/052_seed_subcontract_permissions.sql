@@ -1,0 +1,1 @@
+INSERT INTO permissions(code,name,module,is_system) VALUES('subcontracts.view','عرض عقود مقاولي الباطن','subcontracts',1),('subcontracts.create','إضافة عقود مقاولي الباطن','subcontracts',1),('subcontracts.edit','تعديل عقود مقاولي الباطن','subcontracts',1),('subcontracts.change_status','تغيير حالة عقود مقاولي الباطن','subcontracts',1) ON DUPLICATE KEY UPDATE code=VALUES(code);

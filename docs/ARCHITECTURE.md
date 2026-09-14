@@ -45,3 +45,7 @@ Contract Variations is the shared commercial header for addendums and variations
 ## Contract BOQ
 
 Contract BOQ preserves the original scope as section, item, and unit snapshots while retaining optional Cost Structure links. GET is read-only and scope creation is explicit. Approval is transactional, immutable, and required before activation for BOQ-priced contracts or any started optional original scope.
+
+## Subcontracts
+
+Subcontracts and SubcontractBoq are isolated modules for project execution agreements. They reuse the validated BOQ snapshot and DECIMAL patterns without sharing client BOQ tables. Vendor eligibility is enforced server-side for new assignments while historical relationships remain readable.

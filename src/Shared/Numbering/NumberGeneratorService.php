@@ -32,4 +32,5 @@ final class NumberGeneratorService
     {
         return sprintf('VAR-%d-%04d', $year, $this->sequences->next('contract_variations:' . $year));
     }
+    public function nextSubcontractCode(int $year): string { return sprintf('SUB-%d-%04d',$year,$this->sequences->next('subcontracts:'.$year)); }
 }

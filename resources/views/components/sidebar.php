@@ -15,6 +15,7 @@
                 <li class="nav-item"><a class="nav-link" href="/settings/company"><span class="nav-link-icon"><i class="ti ti-building"></i></span><span class="nav-link-title">ملف الشركة</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/settings/cost-structure"><span class="nav-link-icon"><i class="ti ti-hierarchy-2"></i></span><span class="nav-link-title">هيكل التكاليف</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/contracts"><span class="nav-link-icon"><i class="ti ti-file-certificate"></i></span><span class="nav-link-title">عقود العملاء</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="/subcontracts"><span class="nav-link-icon"><i class="ti ti-file-invoice"></i></span><span class="nav-link-title">عقود مقاولي الباطن</span></a></li>
             </ul>
         </div>
     </div>
