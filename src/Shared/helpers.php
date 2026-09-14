@@ -24,3 +24,12 @@ if (!function_exists('e')) {
         return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 }
+
+if (!function_exists('decimal_format')) {
+    function decimal_format(string $value, int $scale = 2): string
+    {
+        if (!preg_match('/^(-?)(\d+)(?:\.(\d+))?$/', trim($value), $matches)) return $value;
+        $whole = preg_replace('/\B(?=(\d{3})+(?!\d))/', ',', ltrim($matches[2], '0') ?: '0');
+        return $matches[1] . $whole . ($scale > 0 ? '.' . str_pad(substr($matches[3] ?? '', 0, $scale), $scale, '0') : '');
+    }
+}

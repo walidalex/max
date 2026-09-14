@@ -8,7 +8,7 @@ final class ProjectController
  public function index(Request $r):Response{$refs=$this->projects->referenceData();return Response::html($this->view->render('modules/projects/index',['title'=>'المشاريع',...$refs,'canCreate'=>$this->auth->can('projects.create'),'canEdit'=>$this->auth->can('projects.edit'),'canChangeStatus'=>$this->auth->can('projects.change_status')]));}
  public function create(Request $r):Response{return $this->form(null);}
  public function edit(Request $r):Response{return $this->form((int)$r->route('id'));}
- public function show(Request $r):Response{$p=$this->projects->find((int)$r->route('id'));return Response::html($this->view->render('modules/projects/show',['title'=>'تفاصيل المشروع','project'=>$p,'canEdit'=>$this->auth->can('projects.edit'),'canChangeStatus'=>$this->auth->can('projects.change_status'),'transitions'=>$this->projects->allowedTransitions((string)$p['status'])]));}
+ public function show(Request $r):Response{$p=$this->projects->find((int)$r->route('id'));return Response::html($this->view->render('modules/projects/show',['title'=>'تفاصيل المشروع','project'=>$p,'canEdit'=>$this->auth->can('projects.edit'),'canChangeStatus'=>$this->auth->can('projects.change_status'),'canViewCosts'=>$this->auth->can('project_costs.view'),'transitions'=>$this->projects->allowedTransitions((string)$p['status'])]));}
  public function store(Request $r):Response{return $this->save($r,null);}
  public function update(Request $r):Response{return $this->save($r,(int)$r->route('id'));}
  public function status(Request $r):Response

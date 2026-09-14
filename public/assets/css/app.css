@@ -7,3 +7,20 @@ body { font-family: Tahoma, Arial, sans-serif; }
 .app-brand-name { overflow-wrap: anywhere; }
 .ti { font-size: 1.25rem; vertical-align: -0.2em; }
 [dir="rtl"] .ts-control { text-align: right; }
+
+/* Tom Select expects Bootstrap --bs-* variables; Tabler exposes --tblr-*. */
+.ts-dropdown,
+.ts-dropdown.form-control,
+.ts-dropdown.form-select {
+    background-color: var(--tblr-bg-surface, #fff) !important;
+    color: var(--tblr-body-color, #182433);
+    z-index: 1060;
+}
+
+.ts-dropdown .optgroup-header {
+    background-color: var(--tblr-bg-surface, #fff);
+}
+
+.ts-dropdown .active {
+    background-color: var(--tblr-bg-surface-secondary, #f3f4f6);
+}

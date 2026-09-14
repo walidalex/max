@@ -33,6 +33,10 @@ $projectsResponse=$app->handle(new Request([],[],['REQUEST_METHOD'=>'GET','REQUE
 if($projectsResponse->status()!==302){throw new RuntimeException('Projects route must require authentication.');}
 $projectsApiResponse=$app->handle(new Request([],[],['REQUEST_METHOD'=>'GET','REQUEST_URI'=>'/api/projects','HTTP_ACCEPT'=>'application/json']));
 if($projectsApiResponse->status()!==401){throw new RuntimeException('Projects API must require authentication.');}
+$projectCostsResponse=$app->handle(new Request([],[],['REQUEST_METHOD'=>'GET','REQUEST_URI'=>'/project-costs']));
+if($projectCostsResponse->status()!==302){throw new RuntimeException('Project costs route must require authentication.');}
+$projectCostsApiResponse=$app->handle(new Request([],[],['REQUEST_METHOD'=>'GET','REQUEST_URI'=>'/api/project-costs','HTTP_ACCEPT'=>'application/json']));
+if($projectCostsApiResponse->status()!==401){throw new RuntimeException('Project costs API must require authentication.');}
 $projectsResponse=$app->handle(new Request([],[],['REQUEST_METHOD'=>'GET','REQUEST_URI'=>'/projects']));
 if($projectsResponse->status()!==302){throw new RuntimeException('Projects route must require authentication.');}
 $projectsApiResponse=$app->handle(new Request([],[],['REQUEST_METHOD'=>'GET','REQUEST_URI'=>'/api/projects','HTTP_ACCEPT'=>'application/json']));

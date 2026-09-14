@@ -26,6 +26,10 @@ The Clients module follows the standard controller, validator/DTO, service, repo
 
 Suppliers and subcontractors share the Vendors module and master table. The list uses the shared server-side DataTables helper. Contact create/edit uses one Tabler Bootstrap modal and JSON responses; validation errors stay in the modal, while successful writes refresh only the shared contacts component. Contact primary changes remain transactional.
 
+## Project actual costs
+
+ProjectCosts owns the central recognized-cost ledger. Approval locks Project, Cost Entry, Cost Code/Work Section, then optional Vendor; it freezes classification snapshots and makes the entry immutable. Project and global ledgers reuse one server-side DataTables query. Source identities prevent future integrations from posting the same source line twice. Recognized cost is not payment.
+
 ## Projects
 
 The Projects module owns project master data only. Codes use atomic yearly sequences. Client contacts and active project managers are validated server-side, while lifecycle transitions use separate authorization.

@@ -16,6 +16,7 @@
                 <li class="nav-item"><a class="nav-link active" href="/"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-home"></i></span><span class="nav-link-title">البداية</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/clients"><span class="nav-link-icon"><i class="ti ti-address-book"></i></span><span class="nav-link-title">العملاء</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/vendors"><span class="nav-link-icon"><i class="ti ti-truck-delivery"></i></span><span class="nav-link-title">الموردون ومقاولو الباطن</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="/project-costs"><span class="nav-link-icon"><i class="ti ti-cash"></i></span><span class="nav-link-title">التكاليف الفعلية</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/projects"><span class="nav-link-icon"><i class="ti ti-briefcase"></i></span><span class="nav-link-title">المشاريع</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/access/users"><span class="nav-link-icon"><i class="ti ti-users"></i></span><span class="nav-link-title">المستخدمون</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/access/roles"><span class="nav-link-icon"><i class="ti ti-user-shield"></i></span><span class="nav-link-title">الأدوار</span></a></li>

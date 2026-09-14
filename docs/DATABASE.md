@@ -35,6 +35,10 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 - `vendor_contacts` supports multiple contacts and enforces at most one primary contact with a generated nullable slot and unique key.
 - Vendor codes use the independent `vendors` sequence and are generated as `VN-0001`. Vendors are deactivated rather than physically deleted.
 
+## Project actual costs
+
+`project_actual_costs` is the central recognized-cost ledger. Only rows with `status = 'approved'` contribute to project cost totals. Amounts use `DECIMAL(18,2)` and remain decimal strings in PHP. Approval freezes Work Section and Cost Code codes/names. Manual entries have `source_type = manual` and NULL source IDs; future sources use a unique deterministic `(source_type, source_id, source_line_id)` identity. Payments never create project costs.
+
 ## Projects
 
 - `projects` references one client and optionally a contact belonging to that client and an active user as project manager.

@@ -43,4 +43,9 @@ final class NumberGeneratorService
     {
         return sprintf('SPAY-%d-%04d', $year, $this->sequences->next('subcontract_payments:' . $year));
     }
+
+    public function nextProjectActualCostCode(int $year): string
+    {
+        return sprintf('COST-%d-%04d', $year, $this->sequences->next('project_actual_costs:' . $year));
+    }
 }
