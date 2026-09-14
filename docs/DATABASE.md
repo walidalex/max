@@ -40,3 +40,11 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 - `projects` references one client and optionally a contact belonging to that client and an active user as project manager.
 - Types and statuses use validated strings with database check constraints.
 - Codes use yearly atomic sequences in the format `PRJ-YYYY-NNNN`; financial totals remain outside the project master.
+
+## Cost structure
+
+- `work_sections` stores the approved work-section codes; gaps in the source numbering are preserved.
+- `cost_codes` belongs to one section and may reference a default unit. Both foreign keys use `ON DELETE RESTRICT` so historical/default relationships cannot be removed accidentally.
+- `units`, sections, and cost codes use lifecycle flags instead of deletion. Deactivation never cascades to child flags.
+- Inactive sections and units cannot be selected for new assignments. Existing relationships remain unchanged and may still be displayed historically.
+- Seed migrations are repeat-safe with no-op `ON DUPLICATE KEY UPDATE` clauses and never overwrite edited master data.

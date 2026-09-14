@@ -29,3 +29,7 @@ Suppliers and subcontractors share the Vendors module and master table. The list
 ## Projects
 
 The Projects module owns project master data only. Codes use atomic yearly sequences. Client contacts and active project managers are validated server-side, while lifecycle transitions use separate authorization.
+
+## Cost structure
+
+The Cost Structure module manages work sections, cost codes, and units through the standard controller, validator/DTO, service, and repository flow. Lifecycle and uniqueness rules live in the service, while all SQL remains in repositories. The Arabic RTL management page groups cost codes by expandable work section and restricts selectors to active master records.

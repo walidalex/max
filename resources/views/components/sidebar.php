@@ -13,6 +13,7 @@
                 <li class="nav-item"><a class="nav-link" href="/access/permissions"><span class="nav-link-icon"><i class="ti ti-key"></i></span><span class="nav-link-title">الصلاحيات</span></a></li>
                 <li class="nav-item mt-3"><span class="nav-link disabled"><span class="nav-link-title text-uppercase text-secondary small">الإعدادات</span></span></li>
                 <li class="nav-item"><a class="nav-link" href="/settings/company"><span class="nav-link-icon"><i class="ti ti-building"></i></span><span class="nav-link-title">ملف الشركة</span></a></li>
+                <li class="nav-item"><a class="nav-link" href="/settings/cost-structure"><span class="nav-link-icon"><i class="ti ti-hierarchy-2"></i></span><span class="nav-link-title">هيكل التكاليف</span></a></li>
             </ul>
         </div>
     </div>

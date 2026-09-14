@@ -13,6 +13,7 @@ use App\Modules\Clients\Controllers\ClientContactController;
 use App\Modules\Vendors\Controllers\VendorController;
 use App\Modules\Vendors\Controllers\VendorContactController;
 use App\Modules\Projects\Controllers\ProjectController;
+use App\Modules\CostStructure\Controllers\CostStructureController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -69,3 +70,13 @@ $app->router()->get('/projects/{id}',[ProjectController::class,'show'],['auth','
 $app->router()->get('/projects/{id}/edit',[ProjectController::class,'edit'],['auth','permission:projects.edit']);
 $app->router()->post('/projects/{id}/edit',[ProjectController::class,'update'],['auth','permission:projects.edit']);
 $app->router()->post('/projects/{id}/status',[ProjectController::class,'status'],['auth','permission:projects.change_status']);
+$app->router()->get('/settings/cost-structure',[CostStructureController::class,'index'],['auth','permission:cost_structure.view']);
+$app->router()->post('/settings/cost-structure/sections',[CostStructureController::class,'storeSection'],['auth','permission:cost_structure.manage']);
+$app->router()->post('/settings/cost-structure/sections/{id}',[CostStructureController::class,'updateSection'],['auth','permission:cost_structure.manage']);
+$app->router()->post('/settings/cost-structure/sections/{id}/activate',[CostStructureController::class,'toggleSection'],['auth','permission:cost_structure.manage']);
+$app->router()->post('/settings/cost-structure/codes',[CostStructureController::class,'storeCode'],['auth','permission:cost_structure.manage']);
+$app->router()->post('/settings/cost-structure/codes/{id}',[CostStructureController::class,'updateCode'],['auth','permission:cost_structure.manage']);
+$app->router()->post('/settings/cost-structure/codes/{id}/activate',[CostStructureController::class,'toggleCode'],['auth','permission:cost_structure.manage']);
+$app->router()->post('/settings/cost-structure/units',[CostStructureController::class,'storeUnit'],['auth','permission:cost_structure.manage']);
+$app->router()->post('/settings/cost-structure/units/{id}',[CostStructureController::class,'updateUnit'],['auth','permission:cost_structure.manage']);
+$app->router()->post('/settings/cost-structure/units/{id}/activate',[CostStructureController::class,'toggleUnit'],['auth','permission:cost_structure.manage']);
