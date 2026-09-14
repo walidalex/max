@@ -16,6 +16,7 @@ use App\Modules\Projects\Controllers\ProjectController;
 use App\Modules\CostStructure\Controllers\CostStructureController;
 use App\Modules\ClientContracts\Controllers\ClientContractController;
 use App\Modules\ContractVariations\Controllers\ContractVariationController;
+use App\Modules\ContractBoq\Controllers\ContractBoqController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -97,3 +98,13 @@ $app->router()->get('/contract-variations/{id}/edit',[ContractVariationControlle
 $app->router()->post('/contract-variations/{id}/edit',[ContractVariationController::class,'update'],['auth','permission:contract_variations.edit']);
 $app->router()->post('/contract-variations/{id}/approve',[ContractVariationController::class,'approve'],['auth','permission:contract_variations.approve']);
 $app->router()->post('/contract-variations/{id}/cancel',[ContractVariationController::class,'cancel'],['auth','permission:contract_variations.cancel']);
+$app->router()->get('/contracts/{contract_id}/boq',[ContractBoqController::class,'show'],['auth','permission:contract_boq.view']);
+$app->router()->post('/contracts/{contract_id}/boq',[ContractBoqController::class,'start'],['auth','permission:contract_boq.manage']);
+$app->router()->post('/contracts/{contract_id}/boq/discard',[ContractBoqController::class,'discard'],['auth','permission:contract_boq.manage']);
+$app->router()->post('/contracts/{contract_id}/boq/sections',[ContractBoqController::class,'section'],['auth','permission:contract_boq.manage']);
+$app->router()->post('/contracts/{contract_id}/boq/sections/{section_id}',[ContractBoqController::class,'section'],['auth','permission:contract_boq.manage']);
+$app->router()->post('/contracts/{contract_id}/boq/sections/{section_id}/remove',[ContractBoqController::class,'removeSection'],['auth','permission:contract_boq.manage']);
+$app->router()->post('/contracts/{contract_id}/boq/items',[ContractBoqController::class,'item'],['auth','permission:contract_boq.manage']);
+$app->router()->post('/contracts/{contract_id}/boq/items/{item_id}',[ContractBoqController::class,'item'],['auth','permission:contract_boq.manage']);
+$app->router()->post('/contracts/{contract_id}/boq/items/{item_id}/remove',[ContractBoqController::class,'removeItem'],['auth','permission:contract_boq.manage']);
+$app->router()->post('/contracts/{contract_id}/boq/approve',[ContractBoqController::class,'approve'],['auth','permission:contract_boq.approve']);

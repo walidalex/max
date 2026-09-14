@@ -1,0 +1,1 @@
+INSERT INTO role_permissions(role_id,permission_id) SELECT r.id,p.id FROM roles r JOIN permissions p ON p.id=p.id AND p.code IN('contract_boq.view','contract_boq.manage','contract_boq.approve') WHERE r.code='super_admin' ON DUPLICATE KEY UPDATE role_id=VALUES(role_id);

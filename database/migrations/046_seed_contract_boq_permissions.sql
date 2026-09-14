@@ -1,0 +1,1 @@
+INSERT INTO permissions(code,name,module,is_system) VALUES ('contract_boq.view','عرض جدول كميات العقد','contract_boq',1),('contract_boq.manage','إدارة جدول كميات العقد','contract_boq',1),('contract_boq.approve','اعتماد جدول كميات العقد','contract_boq',1) ON DUPLICATE KEY UPDATE code=VALUES(code);

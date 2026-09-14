@@ -41,3 +41,7 @@ Client Contracts owns the single main agreement header for each project. Interna
 ## Contract variations
 
 Contract Variations is the shared commercial header for addendums and variations. Creation is limited to active or suspended contracts. Approval and cancellation are separate permission-protected actions with authenticated-user audit fields. Approved commercial data is immutable except for administrative notes, and the original contract value is never updated.
+
+## Contract BOQ
+
+Contract BOQ preserves the original scope as section, item, and unit snapshots while retaining optional Cost Structure links. GET is read-only and scope creation is explicit. Approval is transactional, immutable, and required before activation for BOQ-priced contracts or any started optional original scope.

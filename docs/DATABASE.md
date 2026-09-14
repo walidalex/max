@@ -62,3 +62,10 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 - Monetary values are non-negative and `amount_effect` expresses increase or decrease. Non-financial addendums use `none` with `NULL` amount and markup.
 - Reference numbers are unique per parent contract while multiple `NULL` values are allowed.
 - Approval and cancellation record their timestamp and authenticated user. Approved increases and decreases are derived for display and are not persisted on the contract.
+
+## Contract BOQ
+
+- One optional original BOQ belongs to each client contract. Sections and items store contractual snapshots beside optional master-data references.
+- Items may be unpriced scope lines for lump-sum and cost-plus contracts; BOQ-priced contracts require unit, quantity, and rate.
+- `line_total` is a stored generated DECIMAL value. Section and grand totals are derived with SQL.
+- Approval freezes the original BOQ; for BOQ pricing it atomically synchronizes the exact total to the base contract value.

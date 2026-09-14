@@ -1,0 +1,1 @@
+<?php declare(strict_types=1);namespace App\Modules\ContractBoq\DTOs;final readonly class BoqSectionData{public function __construct(public ?int $workSectionId,public string $sectionCode,public string $title,public ?string $description,public int $sortOrder){}}
