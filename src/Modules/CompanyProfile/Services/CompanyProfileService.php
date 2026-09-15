@@ -22,4 +22,11 @@ final class CompanyProfileService
         $path=$this->get()['logo_path']??null;if(!is_string($path)||$path===''){throw new BusinessRuleException('لا يوجد شعار للشركة.');}
         return $this->logos->resolve($path);
     }
+    public function logoDataUri():?string
+    {
+        try{$logo=$this->logo();$contents=file_get_contents($logo['path']);}
+        catch(BusinessRuleException){return null;}
+        if($contents===false){return null;}
+        return 'data:'.$logo['mime'].';base64,'.base64_encode($contents);
+    }
 }

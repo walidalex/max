@@ -8,3 +8,4 @@ Bootstrap, configuration, HTTP routing, database access, validation, sessions, a
 # Recognized project cost
 
 Project Actual Costs is the central recognized-cost ledger. Only approved entries count. Supplier invoices and subcontract progress may feed it in future; payment records represent settlement and must not create or duplicate project cost.
+Phase 1 Client Progress Statements support Cost Plus contracts using approved Project Actual Costs and partial approved Variation allocations. Client Receipts, BOQ billing, and credit/reversal workflows remain future scope.

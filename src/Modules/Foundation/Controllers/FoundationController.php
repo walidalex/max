@@ -25,7 +25,7 @@ final class FoundationController
 
     public function index(Request $request): Response
     {
-        return Response::html($this->view->render('modules/foundation/index', ['title' => 'لوحة البداية']));
+        return Response::html($this->view->render('modules/foundation/index', ['title' => 'الصفحة الرئيسية']));
     }
 
     public function check(Request $request): Response

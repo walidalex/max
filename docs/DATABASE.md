@@ -94,3 +94,4 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 - Payments snapshot approved progress, earned value, previous posted payments, and the available ceiling at posting.
 - Only posted payments consume entitlement. Draft and cancelled payments do not count, and posted payments are immutable.
 - Posting serializes on the subcontract row and enforces both the earned-value ceiling and non-retroactive payment dates. Draft dates cannot move outside the year encoded in their immutable payment code.
+Client Progress Statements are stored in client_progress_statements, client_progress_statement_costs, and client_progress_statement_variations. A nullable generated committed-cost identity with a UNIQUE index prevents one approved Project Actual Cost from being billed twice while allowing draft selections.

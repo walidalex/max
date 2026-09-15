@@ -1,3 +1,21 @@
 <!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?= e($title) ?> | <?= e($appName) ?></title><link rel="icon" type="image/png" href="/assets/images/favicon.png"><link rel="stylesheet" href="/assets/vendor/tabler/tabler.rtl.min.css"><link rel="stylesheet" href="/assets/vendor/tabler-icons/tabler-icons.min.css"><link rel="stylesheet" href="/assets/vendor/sweetalert2/sweetalert2.min.css"><link rel="stylesheet" href="/assets/css/app.css"></head>
-<body class="d-flex flex-column"><div class="page page-center"><div class="container container-tight py-4"><?= $content ?></div></div><script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script><script src="/assets/js/alerts.js"></script><?php if(is_array($flash??null)):?><script>AppAlert.show(<?= json_encode($flash,JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?>);</script><?php endif;?></body></html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="نظام إدارة المقاولات والتصميم الداخلي">
+    <title><?= e($title) ?> | <?= e($companyBrand['name'] ?? $appName) ?></title>
+    <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+    <link rel="stylesheet" href="/assets/vendor/tabler/tabler.rtl.min.css">
+    <link rel="stylesheet" href="/assets/vendor/tabler-icons/tabler-icons.min.css">
+    <link rel="stylesheet" href="/assets/vendor/sweetalert2/sweetalert2.min.css">
+    <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body class="auth-page">
+<main class="auth-shell"><?= $content ?></main>
+<script src="/assets/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+<script src="/assets/js/alerts.js"></script>
+<script src="/assets/js/login.js"></script>
+<?php if(is_array($flash ?? null)): ?><script>AppAlert.show(<?= json_encode($flash,JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?>);</script><?php endif; ?>
+</body>
+</html>

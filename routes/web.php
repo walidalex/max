@@ -22,6 +22,7 @@ use App\Modules\Subcontracts\Controllers\SubcontractController;
 use App\Modules\SubcontractBoq\Controllers\SubcontractBoqController;
 use App\Modules\SubcontractCertificates\Controllers\SubcontractCertificateController;
 use App\Modules\SubcontractPayments\Controllers\SubcontractPaymentController;
+use App\Modules\ClientProgressStatements\Controllers\ClientProgressStatementController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -155,3 +156,13 @@ $app->router()->get('/subcontract-payments/{id}/edit',[SubcontractPaymentControl
 $app->router()->post('/subcontract-payments/{id}/edit',[SubcontractPaymentController::class,'update'],['auth','permission:subcontract_payments.edit']);
 $app->router()->post('/subcontract-payments/{id}/post',[SubcontractPaymentController::class,'post'],['auth','permission:subcontract_payments.post']);
 $app->router()->post('/subcontract-payments/{id}/cancel',[SubcontractPaymentController::class,'cancel'],['auth','permission:subcontract_payments.cancel']);
+$app->router()->get('/client-progress-statements',[ClientProgressStatementController::class,'global'],['auth','permission:client_progress_statements.view']);
+$app->router()->get('/client-contracts/{contract_id}/progress-statements',[ClientProgressStatementController::class,'contract'],['auth','permission:client_progress_statements.view']);
+$app->router()->get('/client-contracts/{contract_id}/progress-statements/create',[ClientProgressStatementController::class,'create'],['auth','permission:client_progress_statements.create']);
+$app->router()->post('/client-contracts/{contract_id}/progress-statements',[ClientProgressStatementController::class,'store'],['auth','permission:client_progress_statements.create']);
+$app->router()->get('/client-progress-statements/{id}',[ClientProgressStatementController::class,'show'],['auth','permission:client_progress_statements.view']);
+$app->router()->get('/client-progress-statements/{id}/edit',[ClientProgressStatementController::class,'edit'],['auth','permission:client_progress_statements.edit']);
+$app->router()->post('/client-progress-statements/{id}/edit',[ClientProgressStatementController::class,'update'],['auth','permission:client_progress_statements.edit']);
+$app->router()->post('/client-progress-statements/{id}/approve',[ClientProgressStatementController::class,'approve'],['auth','permission:client_progress_statements.approve']);
+$app->router()->post('/client-progress-statements/{id}/cancel',[ClientProgressStatementController::class,'cancel'],['auth','permission:client_progress_statements.cancel']);
+$app->router()->get('/client-progress-statements/{id}/print',[ClientProgressStatementController::class,'print'],['auth','permission:client_progress_statements.view']);

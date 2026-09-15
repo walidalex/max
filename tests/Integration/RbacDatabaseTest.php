@@ -6,6 +6,7 @@ use App\Modules\AccessControl\Repositories\PermissionRepository;
 use App\Modules\AccessControl\Repositories\RoleRepository;
 
 $expected = [
+    'client_progress_statements.approve', 'client_progress_statements.cancel', 'client_progress_statements.create', 'client_progress_statements.edit', 'client_progress_statements.view',
     'project_costs.approve', 'project_costs.cancel', 'project_costs.create', 'project_costs.edit', 'project_costs.view',
     'subcontract_payments.cancel', 'subcontract_payments.create', 'subcontract_payments.edit', 'subcontract_payments.post', 'subcontract_payments.view',
     'subcontract_certificates.approve', 'subcontract_certificates.cancel', 'subcontract_certificates.create', 'subcontract_certificates.edit', 'subcontract_certificates.view',

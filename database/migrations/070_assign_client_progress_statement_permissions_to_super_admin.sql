@@ -1,0 +1,1 @@
+INSERT INTO role_permissions(role_id,permission_id) SELECT r.id,p.id FROM roles r JOIN permissions p ON p.code IN('client_progress_statements.view','client_progress_statements.create','client_progress_statements.edit','client_progress_statements.approve','client_progress_statements.cancel') WHERE r.code='super_admin' ON DUPLICATE KEY UPDATE role_id=VALUES(role_id);

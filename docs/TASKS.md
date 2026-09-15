@@ -21,3 +21,4 @@
 - [x] Implement subcontract progress certificates, transactional earned-value approval, and server-side history listing
 - [x] Implement subcontract payments with earned-value ceilings and transactional posting
 - [ ] Add real ERP modules only after their requirements and database boundaries are approved
+- [x] Cost Plus Client Progress Statements with immutable approval snapshots and print view.

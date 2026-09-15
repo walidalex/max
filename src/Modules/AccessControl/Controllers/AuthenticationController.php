@@ -10,10 +10,16 @@ use App\Core\Http\Session;
 use App\Core\View\View;
 use App\Modules\AccessControl\Services\AuthenticationService;
 use App\Modules\AccessControl\Validators\LoginValidator;
+use App\Modules\CompanyProfile\Services\CompanyProfileService;
 final class AuthenticationController
 {
-    public function __construct(private readonly View $view,private readonly Csrf $csrf,private readonly Session $session,private readonly LoginValidator $validator,private readonly AuthenticationService $auth) {}
-    public function form(Request $request):Response{return Response::html($this->view->render('modules/access-control/login',['title'=>'تسجيل الدخول'],'layouts/auth'));}
+    public function __construct(private readonly View $view,private readonly Csrf $csrf,private readonly Session $session,private readonly LoginValidator $validator,private readonly AuthenticationService $auth,private readonly CompanyProfileService $company) {}
+    public function form(Request $request):Response
+    {
+        try{$company=$this->company->get();$logo=$this->company->logoDataUri();}
+        catch(BusinessRuleException){$company=[];$logo=null;}
+        return Response::html($this->view->render('modules/access-control/login',['title'=>'تسجيل الدخول','companyBrand'=>$company,'companyLogoDataUri'=>$logo],'layouts/auth'));
+    }
     public function login(Request $request):Response
     {
         if(!$this->csrf->isValid($request->input('_token'))){return Response::html('انتهت صلاحية الطلب.',419);}

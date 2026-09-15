@@ -48,4 +48,9 @@ final class NumberGeneratorService
     {
         return sprintf('COST-%d-%04d', $year, $this->sequences->next('project_actual_costs:' . $year));
     }
+
+    public function nextClientProgressStatementCode(int $year): string
+    {
+        return sprintf('CPS-%d-%04d', $year, $this->sequences->next('client_progress_statements:' . $year));
+    }
 }

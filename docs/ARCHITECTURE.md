@@ -63,3 +63,4 @@ Architectural invariant: cumulative subcontractor payments must never exceed cum
 ## Subcontract payments
 
 `SubcontractPayments` consumes approved entitlement from `SubcontractCertificates` and never creates or modifies progress. Posting uses the subcontract row as the shared financial lock, re-reads entitlement and posted totals, freezes snapshots, and enforces `cumulative posted payments <= cumulative approved earned value` in one transaction.
+Client Progress Statements use the Client Contract row as the shared financial lock. Cost Plus approval re-reads approved Project Actual Costs and approved Variations, calculates with SQL DECIMAL, freezes snapshots, commits allocations, and allocates the per-contract statement sequence in one transaction.
