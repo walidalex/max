@@ -1,0 +1,1 @@
+INSERT INTO role_permissions(role_id,permission_id) SELECT r.id,p.id FROM roles r JOIN permissions p ON p.code IN('supplier_invoices.view','supplier_invoices.create','supplier_invoices.edit','supplier_invoices.approve','supplier_invoices.cancel') WHERE r.code='super_admin' ON DUPLICATE KEY UPDATE role_id=VALUES(role_id);

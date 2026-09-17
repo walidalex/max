@@ -26,6 +26,8 @@ use App\Modules\ClientProgressStatements\Controllers\ClientProgressStatementCont
 use App\Modules\ClientReceipts\Controllers\ClientReceiptAllocationController;
 use App\Modules\ClientReceipts\Controllers\ClientReceiptController;
 use App\Modules\ClientReceipts\Controllers\ClientReceiptDataTableController;
+use App\Modules\SupplierInvoices\Controllers\SupplierInvoiceController;
+use App\Modules\SupplierInvoices\Controllers\SupplierInvoiceDataTableController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -184,3 +186,13 @@ $app->router()->get('/client-receipts/{id}/print',[ClientReceiptController::clas
 $app->router()->get('/api/client-receipts',[ClientReceiptDataTableController::class,'global'],['auth','permission:client_receipts.view']);
 $app->router()->get('/api/client-contracts/{contract_id}/receipts',[ClientReceiptDataTableController::class,'contract'],['auth','permission:client_receipts.view']);
 $app->router()->get('/api/client-receipts/{id}/eligible-statements',[ClientReceiptAllocationController::class,'eligible'],['auth','permission:client_receipts.allocate']);
+$app->router()->get('/supplier-invoices',[SupplierInvoiceController::class,'index'],['auth','permission:supplier_invoices.view']);
+$app->router()->get('/supplier-invoices/create',[SupplierInvoiceController::class,'create'],['auth','permission:supplier_invoices.create']);
+$app->router()->post('/supplier-invoices',[SupplierInvoiceController::class,'store'],['auth','permission:supplier_invoices.create']);
+$app->router()->get('/supplier-invoices/{id}',[SupplierInvoiceController::class,'show'],['auth','permission:supplier_invoices.view']);
+$app->router()->get('/supplier-invoices/{id}/edit',[SupplierInvoiceController::class,'edit'],['auth','permission:supplier_invoices.edit']);
+$app->router()->post('/supplier-invoices/{id}/edit',[SupplierInvoiceController::class,'update'],['auth','permission:supplier_invoices.edit']);
+$app->router()->post('/supplier-invoices/{id}/approve',[SupplierInvoiceController::class,'approve'],['auth','permission:supplier_invoices.approve']);
+$app->router()->post('/supplier-invoices/{id}/cancel',[SupplierInvoiceController::class,'cancel'],['auth','permission:supplier_invoices.cancel']);
+$app->router()->get('/supplier-invoices/{id}/print',[SupplierInvoiceController::class,'print'],['auth','permission:supplier_invoices.view']);
+$app->router()->get('/api/supplier-invoices',[SupplierInvoiceDataTableController::class,'index'],['auth','permission:supplier_invoices.view']);

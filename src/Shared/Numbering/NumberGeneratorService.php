@@ -58,4 +58,8 @@ final class NumberGeneratorService
     {
         return sprintf('CRCT-%d-%04d', $year, $this->sequences->next('client_receipts:' . $year));
     }
+    public function nextSupplierInvoiceCode(int $year): string
+    {
+        return sprintf('SINV-%d-%04d', $year, $this->sequences->next('supplier_invoices:' . $year));
+    }
 }
