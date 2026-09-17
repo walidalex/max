@@ -21,10 +21,10 @@
 - [x] Implement subcontract progress certificates, transactional earned-value approval, and server-side history listing
 - [x] Implement subcontract payments with earned-value ceilings and transactional posting
 - [x] Cost Plus Client Progress Statements with immutable approval snapshots and print view.
+- [x] Client Receipts and append-only Receipt Allocation with derived outstanding balances
 
 ## Planned
 
-- [ ] Client Receipts and Receipt Allocation
 - [ ] BOQ Client Progress Statements
 - [ ] Supplier Invoices and Supplier Payments
 - [ ] Procurement and Purchase Orders

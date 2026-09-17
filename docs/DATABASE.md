@@ -95,3 +95,7 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 - Only posted payments consume entitlement. Draft and cancelled payments do not count, and posted payments are immutable.
 - Posting serializes on the subcontract row and enforces both the earned-value ceiling and non-retroactive payment dates. Draft dates cannot move outside the year encoded in their immutable payment code.
 Client Progress Statements are stored in client_progress_statements, client_progress_statement_costs, and client_progress_statement_variations. A nullable generated committed-cost identity with a UNIQUE index prevents one approved Project Actual Cost from being billed twice while allowing draft selections.
+
+## Client receipts
+
+`client_receipts` stores immutable posted cash events with frozen client/project/contract identity. `client_receipt_allocations` stores append-only settlement rows against approved Client Progress Statements. Receipt and statement balances are derived with SQL `DECIMAL`; no paid or balance columns are added to statements. Foreign keys use `ON DELETE RESTRICT`, and the Client Contract row serializes allocation activity.

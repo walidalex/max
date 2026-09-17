@@ -53,4 +53,9 @@ final class NumberGeneratorService
     {
         return sprintf('CPS-%d-%04d', $year, $this->sequences->next('client_progress_statements:' . $year));
     }
+
+    public function nextClientReceiptCode(int $year): string
+    {
+        return sprintf('CRCT-%d-%04d', $year, $this->sequences->next('client_receipts:' . $year));
+    }
 }

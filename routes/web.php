@@ -23,6 +23,9 @@ use App\Modules\SubcontractBoq\Controllers\SubcontractBoqController;
 use App\Modules\SubcontractCertificates\Controllers\SubcontractCertificateController;
 use App\Modules\SubcontractPayments\Controllers\SubcontractPaymentController;
 use App\Modules\ClientProgressStatements\Controllers\ClientProgressStatementController;
+use App\Modules\ClientReceipts\Controllers\ClientReceiptAllocationController;
+use App\Modules\ClientReceipts\Controllers\ClientReceiptController;
+use App\Modules\ClientReceipts\Controllers\ClientReceiptDataTableController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -166,3 +169,18 @@ $app->router()->post('/client-progress-statements/{id}/edit',[ClientProgressStat
 $app->router()->post('/client-progress-statements/{id}/approve',[ClientProgressStatementController::class,'approve'],['auth','permission:client_progress_statements.approve']);
 $app->router()->post('/client-progress-statements/{id}/cancel',[ClientProgressStatementController::class,'cancel'],['auth','permission:client_progress_statements.cancel']);
 $app->router()->get('/client-progress-statements/{id}/print',[ClientProgressStatementController::class,'print'],['auth','permission:client_progress_statements.view']);
+$app->router()->get('/client-receipts',[ClientReceiptController::class,'global'],['auth','permission:client_receipts.view']);
+$app->router()->get('/client-contracts/{contract_id}/receipts',[ClientReceiptController::class,'contract'],['auth','permission:client_receipts.view']);
+$app->router()->get('/client-contracts/{contract_id}/receipts/create',[ClientReceiptController::class,'create'],['auth','permission:client_receipts.create']);
+$app->router()->post('/client-contracts/{contract_id}/receipts',[ClientReceiptController::class,'store'],['auth','permission:client_receipts.create']);
+$app->router()->get('/client-receipts/{id}',[ClientReceiptController::class,'show'],['auth','permission:client_receipts.view']);
+$app->router()->get('/client-receipts/{id}/edit',[ClientReceiptController::class,'edit'],['auth','permission:client_receipts.edit']);
+$app->router()->post('/client-receipts/{id}/edit',[ClientReceiptController::class,'update'],['auth','permission:client_receipts.edit']);
+$app->router()->post('/client-receipts/{id}/post',[ClientReceiptController::class,'post'],['auth','permission:client_receipts.post']);
+$app->router()->post('/client-receipts/{id}/cancel',[ClientReceiptController::class,'cancel'],['auth','permission:client_receipts.cancel']);
+$app->router()->get('/client-receipts/{id}/allocate',[ClientReceiptAllocationController::class,'form'],['auth','permission:client_receipts.allocate']);
+$app->router()->post('/client-receipts/{id}/allocate',[ClientReceiptAllocationController::class,'store'],['auth','permission:client_receipts.allocate']);
+$app->router()->get('/client-receipts/{id}/print',[ClientReceiptController::class,'print'],['auth','permission:client_receipts.view']);
+$app->router()->get('/api/client-receipts',[ClientReceiptDataTableController::class,'global'],['auth','permission:client_receipts.view']);
+$app->router()->get('/api/client-contracts/{contract_id}/receipts',[ClientReceiptDataTableController::class,'contract'],['auth','permission:client_receipts.view']);
+$app->router()->get('/api/client-receipts/{id}/eligible-statements',[ClientReceiptAllocationController::class,'eligible'],['auth','permission:client_receipts.allocate']);

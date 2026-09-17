@@ -13,6 +13,7 @@
         </h1>
         <div class="collapse navbar-collapse" id="sidebar-menu">
             <ul class="navbar-nav pt-lg-3">
+                <li class="nav-item"><a class="nav-link" href="/client-receipts"><span class="nav-link-icon"><i class="ti ti-receipt"></i></span><span class="nav-link-title">سندات قبض العملاء</span></a></li>
                 <li class="nav-item"><a class="nav-link active" href="/"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-home"></i></span><span class="nav-link-title">الصفحة الرئيسية</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/clients"><span class="nav-link-icon"><i class="ti ti-address-book"></i></span><span class="nav-link-title">العملاء</span></a></li>
                 <li class="nav-item"><a class="nav-link" href="/vendors"><span class="nav-link-icon"><i class="ti ti-truck-delivery"></i></span><span class="nav-link-title">الموردون ومقاولو الباطن</span></a></li>

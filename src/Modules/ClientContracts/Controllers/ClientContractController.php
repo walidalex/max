@@ -1,14 +1,148 @@
 <?php
 declare(strict_types=1);
 namespace App\Modules\ClientContracts\Controllers;
-use App\Core\Exceptions\BusinessRuleException;use App\Core\Exceptions\ValidationException;use App\Core\Http\Csrf;use App\Core\Http\Request;use App\Core\Http\Response;use App\Core\Http\Session;use App\Core\View\View;use App\Modules\AccessControl\Services\AuthorizationService;use App\Modules\ClientContracts\Services\ClientContractService;use App\Modules\ClientContracts\Validators\ClientContractStatusValidator;use App\Modules\ClientContracts\Validators\ClientContractValidator;
+use App\Core\Exceptions\BusinessRuleException;
+use App\Core\Exceptions\ValidationException;
+use App\Core\Http\Csrf;
+use App\Core\Http\Request;
+use App\Core\Http\Response;
+use App\Core\Http\Session;
+use App\Core\View\View;
+use App\Modules\AccessControl\Services\AuthorizationService;
+use App\Modules\ClientContracts\Services\ClientContractService;
+use App\Modules\ClientContracts\Validators\ClientContractStatusValidator;
+use App\Modules\ClientContracts\Validators\ClientContractValidator;
+use App\Modules\ClientReceipts\Services\ClientReceiptService;
 final class ClientContractController
 {
- public function __construct(private readonly View $view,private readonly Csrf $csrf,private readonly Session $session,private readonly AuthorizationService $auth,private readonly ClientContractService $service,private readonly ClientContractValidator $validator,private readonly ClientContractStatusValidator $statusValidator){}
- public function index(Request $r):Response{$refs=$this->service->filterReferences();return Response::html($this->view->render('modules/client-contracts/index',['title'=>'عقود العملاء',...$refs,'canCreate'=>$this->auth->can('client_contracts.create'),'canEdit'=>$this->auth->can('client_contracts.edit')]));}
- public function create(Request $r):Response{return $this->form(null);}public function edit(Request $r):Response{return $this->form((int)$r->route('id'));}public function show(Request $r):Response{$c=$this->service->find((int)$r->route('id'));return Response::html($this->view->render('modules/client-contracts/show',['title'=>'تفاصيل عقد العميل','contract'=>$c,'transitions'=>$this->service->allowedTransitions((string)$c['status']),'canEdit'=>$this->auth->can('client_contracts.edit'),'canChangeStatus'=>$this->auth->can('client_contracts.change_status'),'canViewVariations'=>$this->auth->can('contract_variations.view'),'canViewBoq'=>$this->auth->can('contract_boq.view'),'canViewProgressStatements'=>$this->auth->can('client_progress_statements.view')]));}public function store(Request $r):Response{return $this->save($r,null);}public function update(Request $r):Response{return $this->save($r,(int)$r->route('id'));}
- public function status(Request $r):Response{if(!$this->csrf->isValid($r->input('_token')))return Response::html('انتهت صلاحية الطلب.',419);$id=(int)$r->route('id');try{$d=$this->statusValidator->validate($r->input('status'));$this->service->changeStatus($id,$d->status);$this->flash('success','تم التحديث','تم تغيير حالة العقد.');}catch(ValidationException|BusinessRuleException $e){$this->flash('error','تعذر التحديث',$e instanceof ValidationException?(string)reset($e->errors['status']):$e->getMessage());}return Response::redirect("/contracts/{$id}");}
- private function form(?int $id):Response{$c=$id===null?null:$this->service->find($id);$refs=$this->service->references($id);$contacts=$c===null?[]:$this->service->contacts((int)$c['project_id']);return Response::html($this->view->render('modules/client-contracts/form',['title'=>$id===null?'إضافة عقد عميل':'تعديل عقد العميل','contract'=>$c,'contacts'=>$contacts,...$refs]));}
- private function save(Request $r,?int $id):Response{if(!$this->csrf->isValid($r->input('_token')))return Response::html('انتهت صلاحية الطلب.',419);try{$id=$this->service->save($this->validator->validate($r->all()),$id);$this->flash('success','تم الحفظ','تم حفظ عقد العميل.');return Response::redirect("/contracts/{$id}");}catch(ValidationException|BusinessRuleException $e){$message=$e instanceof ValidationException?(string)reset($e->errors[array_key_first($e->errors)]):$e->getMessage();$this->flash('error','تعذر الحفظ',$message);return Response::redirect($id===null?'/contracts/create':"/contracts/{$id}/edit");}}
- private function flash(string $type,string $title,string $text):void{$this->session->flash('alert',compact('type','title','text'));}
+    public function __construct(
+        private readonly View $view,
+        private readonly Csrf $csrf,
+        private readonly Session $session,
+        private readonly AuthorizationService $auth,
+        private readonly ClientContractService $service,
+        private readonly ClientContractValidator $validator,
+        private readonly ClientContractStatusValidator $statusValidator,
+        private readonly ClientReceiptService $receipts,
+    ) {}
+    public function index(Request $r): Response
+    {
+        $refs = $this->service->filterReferences();
+        return Response::html(
+            $this->view->render("modules/client-contracts/index", [
+                "title" => "عقود العملاء",
+                ...$refs,
+                "canCreate" => $this->auth->can("client_contracts.create"),
+                "canEdit" => $this->auth->can("client_contracts.edit"),
+            ]),
+        );
+    }
+    public function create(Request $r): Response
+    {
+        return $this->form(null);
+    }
+    public function edit(Request $r): Response
+    {
+        return $this->form((int) $r->route("id"));
+    }
+    public function show(Request $r): Response
+    {
+        $c = $this->service->find((int) $r->route("id"));
+        $canViewReceipts = $this->auth->can("client_receipts.view");
+        return Response::html(
+            $this->view->render("modules/client-contracts/show", [
+                "title" => "تفاصيل عقد العميل",
+                "contract" => $c,
+                "transitions" => $this->service->allowedTransitions(
+                    (string) $c["status"],
+                ),
+                "canEdit" => $this->auth->can("client_contracts.edit"),
+                "canChangeStatus" => $this->auth->can(
+                    "client_contracts.change_status",
+                ),
+                "canViewVariations" => $this->auth->can(
+                    "contract_variations.view",
+                ),
+                "canViewBoq" => $this->auth->can("contract_boq.view"),
+                "canViewProgressStatements" => $this->auth->can(
+                    "client_progress_statements.view",
+                ),
+                "canViewReceipts" => $canViewReceipts,
+                "receiptSummary" => $canViewReceipts
+                    ? $this->receipts->financialSummary((int) $c["id"])
+                    : null,
+            ]),
+        );
+    }
+    public function store(Request $r): Response
+    {
+        return $this->save($r, null);
+    }
+    public function update(Request $r): Response
+    {
+        return $this->save($r, (int) $r->route("id"));
+    }
+    public function status(Request $r): Response
+    {
+        if (!$this->csrf->isValid($r->input("_token"))) {
+            return Response::html("انتهت صلاحية الطلب.", 419);
+        }
+        $id = (int) $r->route("id");
+        try {
+            $d = $this->statusValidator->validate($r->input("status"));
+            $this->service->changeStatus($id, $d->status);
+            $this->flash("success", "تم التحديث", "تم تغيير حالة العقد.");
+        } catch (ValidationException | BusinessRuleException $e) {
+            $this->flash(
+                "error",
+                "تعذر التحديث",
+                $e instanceof ValidationException
+                    ? (string) reset($e->errors["status"])
+                    : $e->getMessage(),
+            );
+        }
+        return Response::redirect("/contracts/{$id}");
+    }
+    private function form(?int $id): Response
+    {
+        $c = $id === null ? null : $this->service->find($id);
+        $refs = $this->service->references($id);
+        $contacts =
+            $c === null ? [] : $this->service->contacts((int) $c["project_id"]);
+        return Response::html(
+            $this->view->render("modules/client-contracts/form", [
+                "title" => $id === null ? "إضافة عقد عميل" : "تعديل عقد العميل",
+                "contract" => $c,
+                "contacts" => $contacts,
+                ...$refs,
+            ]),
+        );
+    }
+    private function save(Request $r, ?int $id): Response
+    {
+        if (!$this->csrf->isValid($r->input("_token"))) {
+            return Response::html("انتهت صلاحية الطلب.", 419);
+        }
+        try {
+            $id = $this->service->save(
+                $this->validator->validate($r->all()),
+                $id,
+            );
+            $this->flash("success", "تم الحفظ", "تم حفظ عقد العميل.");
+            return Response::redirect("/contracts/{$id}");
+        } catch (ValidationException | BusinessRuleException $e) {
+            $message =
+                $e instanceof ValidationException
+                    ? (string) reset($e->errors[array_key_first($e->errors)])
+                    : $e->getMessage();
+            $this->flash("error", "تعذر الحفظ", $message);
+            return Response::redirect(
+                $id === null ? "/contracts/create" : "/contracts/{$id}/edit",
+            );
+        }
+    }
+    private function flash(string $type, string $title, string $text): void
+    {
+        $this->session->flash("alert", compact("type", "title", "text"));
+    }
 }
