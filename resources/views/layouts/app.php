@@ -15,7 +15,7 @@
 </head>
 <body>
 <div class="page">
-    <?= $this->component('sidebar', ['companyBrand' => $companyBrand ?? null]) ?>
+    <?= $this->component('sidebar', ['companyBrand' => $companyBrand ?? null, 'canView' => $canView ?? null]) ?>
     <div class="page-wrapper">
         <?= $this->component('navbar', ['title' => $title ?? $appName, 'currentUser' => $currentUser ?? null, 'csrfToken' => $csrfToken]) ?>
         <main class="page-body">

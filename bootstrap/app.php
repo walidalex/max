@@ -7,6 +7,7 @@ use App\Core\Config;
 use App\Core\Environment;
 use App\Core\Http\Session;
 use App\Core\View\View;
+use App\Modules\AccessControl\Services\AuthorizationService;
 use App\Modules\CompanyProfile\Repositories\CompanyProfileRepository;
 
 $basePath = dirname(__DIR__);
@@ -47,7 +48,12 @@ $view->shareUsing(static function () use ($app): array {
     /** @var CompanyProfileRepository $profiles */
     $profiles = $app->make(CompanyProfileRepository::class);
     $company = $profiles->get();
-    return $company === null ? [] : ['companyBrand' => $company];
+    /** @var AuthorizationService $authorization */
+    $authorization = $app->make(AuthorizationService::class);
+    return [
+        'companyBrand' => $company,
+        'canView' => static fn (string $permission): bool => $authorization->can($permission),
+    ];
 });
 
 require $basePath . '/routes/web.php';
