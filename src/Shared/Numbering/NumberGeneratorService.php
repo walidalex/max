@@ -62,4 +62,8 @@ final class NumberGeneratorService
     {
         return sprintf('SINV-%d-%04d', $year, $this->sequences->next('supplier_invoices:' . $year));
     }
+    public function nextSupplierPaymentCode(int $year): string
+    {
+        return sprintf('SUPAY-%d-%04d', $year, $this->sequences->next('supplier_payments:' . $year));
+    }
 }

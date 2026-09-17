@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);use App\Core\Database\Database;/** @var Database$db */$db=$app->make(Database::class);$t=$db->execute("SELECT COUNT(*) n FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='supplier_payments'")->fetch_assoc();if((int)$t['n']!==1)throw new RuntimeException('Supplier payments table missing.');$p=$db->execute("SELECT COUNT(*) n FROM permissions WHERE code LIKE 'supplier_payments.%'")->fetch_assoc();if((int)$p['n']!==5)throw new RuntimeException('Supplier payment permissions missing.');

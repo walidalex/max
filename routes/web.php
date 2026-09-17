@@ -28,6 +28,8 @@ use App\Modules\ClientReceipts\Controllers\ClientReceiptController;
 use App\Modules\ClientReceipts\Controllers\ClientReceiptDataTableController;
 use App\Modules\SupplierInvoices\Controllers\SupplierInvoiceController;
 use App\Modules\SupplierInvoices\Controllers\SupplierInvoiceDataTableController;
+use App\Modules\SupplierPayments\Controllers\SupplierPaymentController;
+use App\Modules\SupplierPayments\Controllers\SupplierPaymentDataTableController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -196,3 +198,13 @@ $app->router()->post('/supplier-invoices/{id}/approve',[SupplierInvoiceControlle
 $app->router()->post('/supplier-invoices/{id}/cancel',[SupplierInvoiceController::class,'cancel'],['auth','permission:supplier_invoices.cancel']);
 $app->router()->get('/supplier-invoices/{id}/print',[SupplierInvoiceController::class,'print'],['auth','permission:supplier_invoices.view']);
 $app->router()->get('/api/supplier-invoices',[SupplierInvoiceDataTableController::class,'index'],['auth','permission:supplier_invoices.view']);
+$app->router()->get('/supplier-payments',[SupplierPaymentController::class,'index'],['auth','permission:supplier_payments.view']);
+$app->router()->get('/supplier-payments/create',[SupplierPaymentController::class,'create'],['auth','permission:supplier_payments.create']);
+$app->router()->post('/supplier-payments',[SupplierPaymentController::class,'store'],['auth','permission:supplier_payments.create']);
+$app->router()->get('/supplier-payments/{id}',[SupplierPaymentController::class,'show'],['auth','permission:supplier_payments.view']);
+$app->router()->get('/supplier-payments/{id}/edit',[SupplierPaymentController::class,'edit'],['auth','permission:supplier_payments.edit']);
+$app->router()->post('/supplier-payments/{id}/edit',[SupplierPaymentController::class,'update'],['auth','permission:supplier_payments.edit']);
+$app->router()->post('/supplier-payments/{id}/post',[SupplierPaymentController::class,'post'],['auth','permission:supplier_payments.post']);
+$app->router()->post('/supplier-payments/{id}/cancel',[SupplierPaymentController::class,'cancel'],['auth','permission:supplier_payments.cancel']);
+$app->router()->get('/supplier-payments/{id}/print',[SupplierPaymentController::class,'print'],['auth','permission:supplier_payments.view']);
+$app->router()->get('/api/supplier-payments',[SupplierPaymentDataTableController::class,'index'],['auth','permission:supplier_payments.view']);

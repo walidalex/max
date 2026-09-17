@@ -1,0 +1,2 @@
+<?php
+declare(strict_types=1);namespace App\Modules\SupplierPayments\Controllers;use App\Core\Http\Request;use App\Core\Http\Response;use App\Modules\SupplierPayments\Services\SupplierPaymentService;use App\Modules\SupplierPayments\Validators\SupplierPaymentTableQueryValidator;final class SupplierPaymentDataTableController{public function __construct(private readonly SupplierPaymentService$s,private readonly SupplierPaymentTableQueryValidator$v){}public function index(Request$r):Response{return Response::json($this->s->dataTable($this->v->validate($r->all())));}}
