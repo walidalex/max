@@ -6,12 +6,15 @@ use App\Core\Auth\Auth;
 use App\Core\Database\Database;
 use App\Core\Exceptions\BusinessRuleException;
 use App\Modules\SupplierInvoices\DTOs\SupplierInvoiceData;
+use App\Modules\SupplierInvoices\Repositories\SupplierInvoiceRepository;
 use App\Modules\SupplierInvoices\Services\SupplierInvoiceService;
 
 /** @var Database $db */
 $db = $app->make(Database::class);
 /** @var SupplierInvoiceService $service */
 $service = $app->make(SupplierInvoiceService::class);
+/** @var SupplierInvoiceRepository $repository */
+$repository = $app->make(SupplierInvoiceRepository::class);
 /** @var Auth $auth */
 $auth = $app->make(Auth::class);
 
@@ -22,7 +25,7 @@ if (!$user || !$code) {
 }
 
 $suffix = (string) random_int(100000, 999999);
-$clientId = $vendorId = $projectId = 0;
+$clientId = $vendorId = $projectId = $otherProjectId = 0;
 $invoiceIds = [];
 
 try {
@@ -32,6 +35,8 @@ try {
     $vendorId = (int) $db->connection()->insert_id;
     $db->execute("INSERT INTO projects(project_code, name, client_id, project_type, status) VALUES (?, 'Invoice Project', ?, 'contracting', 'active')", ['SIP-' . $suffix, $clientId]);
     $projectId = (int) $db->connection()->insert_id;
+    $db->execute("INSERT INTO projects(project_code, name, client_id, project_type, status) VALUES (?, 'Other Invoice Project', ?, 'contracting', 'active')", ['SIP-OTHER-' . $suffix, $clientId]);
+    $otherProjectId = (int) $db->connection()->insert_id;
     $auth->login($user);
 
     $data = new SupplierInvoiceData($vendorId, $projectId, 'INV-01', '2026-09-01', '2026-09-30', null, null, [
@@ -40,6 +45,16 @@ try {
     ]);
     $invoiceId = $service->save($data);
     $invoiceIds[] = $invoiceId;
+
+    $staleProjectId = $projectId;
+    $db->execute('UPDATE supplier_invoices SET project_id = ? WHERE id = ?', [$otherProjectId, $invoiceId]);
+    $db->transaction(function () use ($repository, $invoiceId, $staleProjectId): void {
+        $repository->project($staleProjectId, true);
+        if ($repository->findForProject($invoiceId, $staleProjectId, true) !== null) {
+            throw new RuntimeException('Stale supplier invoice project was accepted after locking.');
+        }
+    });
+    $db->execute('UPDATE supplier_invoices SET project_id = ? WHERE id = ?', [$projectId, $invoiceId]);
 
     try {
         $service->save($data);
@@ -88,6 +103,9 @@ try {
     }
     if ($projectId) {
         $db->execute('DELETE FROM projects WHERE id = ?', [$projectId]);
+    }
+    if ($otherProjectId) {
+        $db->execute('DELETE FROM projects WHERE id = ?', [$otherProjectId]);
     }
     if ($vendorId) {
         $db->execute('DELETE FROM vendors WHERE id = ?', [$vendorId]);
