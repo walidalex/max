@@ -99,6 +99,53 @@ final class ClientProgressStatementRepository
             );
         }
     }
+    public function approvedBoq(int $contractId, bool $lock = false): ?array
+    {
+        return $this->one("SELECT * FROM contract_boqs WHERE client_contract_id=? AND status='approved'" . ($lock ? " FOR UPDATE" : ""), [$contractId]);
+    }
+    public function seedBoqDraft(int $statementId, int $contractId): void
+    {
+        $this->db->execute("DELETE FROM client_progress_statement_boq_items WHERE statement_id=? AND is_committed=0", [$statementId]);
+        $this->db->execute("INSERT INTO client_progress_statement_boq_items(statement_id,contract_boq_item_id,current_quantity,sort_order) SELECT ?,i.id,0.0000,i.id FROM contract_boqs b JOIN contract_boq_sections s ON s.contract_boq_id=b.id JOIN contract_boq_items i ON i.contract_boq_section_id=s.id WHERE b.client_contract_id=? AND b.status='approved' ORDER BY s.sort_order,s.id,i.sort_order,i.id", [$statementId,$contractId]);
+    }
+    public function updateBoqDraftQuantities(int $statementId, array $quantities): void
+    {
+        foreach ($quantities as $itemId => $quantity) {
+            $this->db->execute("UPDATE client_progress_statement_boq_items SET current_quantity=? WHERE statement_id=? AND contract_boq_item_id=? AND is_committed=0", [$quantity,$statementId,$itemId]);
+        }
+    }
+    public function boqDraftItemIds(int $statementId): array
+    {
+        return array_map('intval', array_column($this->rows("SELECT contract_boq_item_id FROM client_progress_statement_boq_items WHERE statement_id=? ORDER BY contract_boq_item_id", [$statementId]), 'contract_boq_item_id'));
+    }
+    public function boqItems(int $statementId): array
+    {
+        return $this->rows("SELECT d.*,CASE WHEN d.is_committed=1 THEN d.section_code_snapshot ELSE s.section_code END section_code,CASE WHEN d.is_committed=1 THEN d.section_title_snapshot ELSE s.title END section_title,CASE WHEN d.is_committed=1 THEN d.item_code_snapshot ELSE i.item_code END item_code,CASE WHEN d.is_committed=1 THEN d.description_snapshot ELSE i.description END description,CASE WHEN d.is_committed=1 THEN d.unit_name_snapshot ELSE i.unit_name END unit_name,CASE WHEN d.is_committed=1 THEN d.unit_symbol_snapshot ELSE i.unit_symbol END unit_symbol,CASE WHEN d.is_committed=1 THEN d.contract_quantity_snapshot ELSE i.quantity END contract_quantity,CASE WHEN d.is_committed=1 THEN d.unit_rate_snapshot ELSE i.unit_rate END unit_rate,COALESCE(d.previous_quantity,(SELECT SUM(old.current_quantity) FROM client_progress_statement_boq_items old JOIN client_progress_statements ps ON ps.id=old.statement_id WHERE old.contract_boq_item_id=d.contract_boq_item_id AND old.is_committed=1 AND ps.status='approved'),0.0000) display_previous_quantity FROM client_progress_statement_boq_items d JOIN contract_boq_items i ON i.id=d.contract_boq_item_id JOIN contract_boq_sections s ON s.id=i.contract_boq_section_id WHERE d.statement_id=? ORDER BY d.sort_order,d.id", [$statementId]);
+    }
+    public function boqItemsForContract(int $contractId): array
+    {
+        return $this->rows("SELECT i.id contract_boq_item_id,s.section_code,s.title section_title,i.item_code,i.description,i.unit_name,i.unit_symbol,i.quantity contract_quantity,i.unit_rate,'0.0000' current_quantity,COALESCE((SELECT SUM(old.current_quantity) FROM client_progress_statement_boq_items old JOIN client_progress_statements ps ON ps.id=old.statement_id WHERE old.contract_boq_item_id=i.id AND old.is_committed=1 AND ps.status='approved'),0.0000) display_previous_quantity FROM contract_boqs b JOIN contract_boq_sections s ON s.contract_boq_id=b.id JOIN contract_boq_items i ON i.contract_boq_section_id=s.id WHERE b.client_contract_id=? AND b.status='approved' ORDER BY s.sort_order,s.id,i.sort_order,i.id", [$contractId]);
+    }
+    public function lockBoqDetails(int $statementId): array
+    {
+        return $this->rows("SELECT * FROM client_progress_statement_boq_items WHERE statement_id=? ORDER BY contract_boq_item_id FOR UPDATE", [$statementId]);
+    }
+    public function lockContractBoqItems(int $boqId): array
+    {
+        return $this->rows("SELECT i.*,s.section_code,s.title section_title FROM contract_boq_items i JOIN contract_boq_sections s ON s.id=i.contract_boq_section_id WHERE s.contract_boq_id=? ORDER BY i.id FOR UPDATE", [$boqId]);
+    }
+    public function calculateBoqLine(int $itemId, string $currentQuantity, string $contractQuantity, string $unitRate): array
+    {
+        return $this->one("WITH p AS(SELECT CAST(COALESCE(SUM(CASE WHEN d.is_committed=1 AND s.status='approved' THEN d.current_quantity ELSE 0 END),0) AS DECIMAL(18,4)) pq,CAST(COALESCE(SUM(CASE WHEN d.is_committed=1 AND s.status='approved' THEN d.current_amount ELSE 0 END),0) AS DECIMAL(18,2)) pa FROM client_progress_statement_boq_items d JOIN client_progress_statements s ON s.id=d.statement_id WHERE d.contract_boq_item_id=?),v AS(SELECT pq,pa,CAST(? AS DECIMAL(18,4)) cq,CAST(? AS DECIMAL(18,4)) contract_qty,CAST(? AS DECIMAL(18,2)) rate FROM p) SELECT pq previous_quantity,cq current_quantity,CAST(pq+cq AS DECIMAL(18,4)) cumulative_quantity,pa previous_amount,ROUND(cq*rate,2) current_amount,CAST(pa+ROUND(cq*rate,2) AS DECIMAL(18,2)) cumulative_amount,CASE WHEN pq+cq>contract_qty THEN 1 ELSE 0 END over_quantity FROM v", [$itemId,$currentQuantity,$contractQuantity,$unitRate]) ?? [];
+    }
+    public function commitBoqItem(int $detailId, array $source, array $calculation): void
+    {
+        $this->db->execute("UPDATE client_progress_statement_boq_items SET section_code_snapshot=?,section_title_snapshot=?,item_code_snapshot=?,description_snapshot=?,unit_name_snapshot=?,unit_symbol_snapshot=?,contract_quantity_snapshot=?,unit_rate_snapshot=?,previous_quantity=?,cumulative_quantity=?,previous_amount=?,current_amount=?,cumulative_amount=?,is_committed=1 WHERE id=? AND is_committed=0", [$source['section_code'],$source['section_title'],$source['item_code'],$source['description'],$source['unit_name'],$source['unit_symbol'],$source['quantity'],$source['unit_rate'],$calculation['previous_quantity'],$calculation['cumulative_quantity'],$calculation['previous_amount'],$calculation['current_amount'],$calculation['cumulative_amount'],$detailId]);
+    }
+    public function calculateBoqHeader(int $statementId, string $variation, ?array $latest): array
+    {
+        return $this->one("WITH x AS(SELECT CAST(COALESCE(SUM(current_amount),0) AS DECIMAL(18,2)) current_boq FROM client_progress_statement_boq_items WHERE statement_id=?),v AS(SELECT current_boq,CAST(? AS DECIMAL(18,2)) current_variation,CAST(? AS DECIMAL(18,2)) previous_boq,CAST(? AS DECIMAL(18,2)) previous_variation,CAST(? AS DECIMAL(18,2)) previous_statement FROM x) SELECT previous_boq,current_boq current_boq_amount,CAST(previous_boq+current_boq AS DECIMAL(18,2)) cumulative_boq_amount,previous_variation,current_variation current_variation_amount,CAST(previous_variation+current_variation AS DECIMAL(18,2)) cumulative_variation_amount,previous_statement,CAST(current_boq+current_variation AS DECIMAL(18,2)) current_statement_amount,CAST(previous_statement+current_boq+current_variation AS DECIMAL(18,2)) cumulative_statement_amount FROM v", [$statementId,$variation,$latest['cumulative_boq_amount']??'0.00',$latest['cumulative_variation_amount']??'0.00',$latest['cumulative_statement_amount']??'0.00']) ?? [];
+    }
     public function eligibleCosts(int $id): array
     {
         return $this->rows(
@@ -171,7 +218,7 @@ final class ClientProgressStatementRepository
     public function latestApproved(int $c): ?array
     {
         return $this->one(
-            "SELECT statement_date,statement_sequence,cumulative_cost_amount,cumulative_markup_amount,cumulative_variation_amount,cumulative_statement_amount FROM client_progress_statements WHERE client_contract_id=? AND status='approved' ORDER BY statement_sequence DESC LIMIT 1",
+            "SELECT statement_date,statement_sequence,cumulative_cost_amount,cumulative_markup_amount,cumulative_boq_amount,cumulative_variation_amount,cumulative_statement_amount FROM client_progress_statements WHERE client_contract_id=? AND status='approved' ORDER BY statement_sequence DESC LIMIT 1",
             [$c],
         );
     }
@@ -286,6 +333,10 @@ final class ClientProgressStatementRepository
             ],
         );
     }
+    public function approveBoq(int $id, int $seq, int $user, array $c, array $x): void
+    {
+        $this->db->execute("UPDATE client_progress_statements SET statement_sequence=?,pricing_method_snapshot='boq',client_name_snapshot=?,project_code_snapshot=?,project_name_snapshot=?,contract_code_snapshot=?,contract_number_snapshot=?,contract_title_snapshot=?,previous_boq_amount=?,current_boq_amount=?,cumulative_boq_amount=?,previous_variation_amount=?,current_variation_amount=?,cumulative_variation_amount=?,previous_statement_amount=?,current_statement_amount=?,cumulative_statement_amount=?,status='approved',approved_at=NOW(),approved_by=? WHERE id=? AND status='draft'", [$seq,$x['client_name'],$x['project_code'],$x['project_name'],$x['contract_code'],$x['contract_number'],$x['title'],$c['previous_boq'],$c['current_boq_amount'],$c['cumulative_boq_amount'],$c['previous_variation'],$c['current_variation_amount'],$c['cumulative_variation_amount'],$c['previous_statement'],$c['current_statement_amount'],$c['cumulative_statement_amount'],$user,$id]);
+    }
     public function cancel(int $id, int $user): void
     {
         $this->db->execute(
@@ -325,7 +376,7 @@ final class ClientProgressStatementRepository
     {
         return [
             "contracts" => $this->rows(
-                "SELECT id,contract_code,title FROM client_contracts WHERE pricing_method='cost_plus' ORDER BY contract_code",
+                "SELECT id,contract_code,title FROM client_contracts WHERE pricing_method IN('cost_plus','boq') ORDER BY contract_code",
             ),
             "projects" => $this->rows(
                 "SELECT id,project_code,name FROM projects ORDER BY project_code",
@@ -385,7 +436,7 @@ final class ClientProgressStatementRepository
             "project_name" => "project_name",
             "contract_code" => "contract_code",
             "pricing_method" => "pricing_method",
-            "current_cost_amount" => "s.current_cost_amount",
+            "current_cost_amount" => "COALESCE(s.current_cost_amount,s.current_boq_amount)",
             "current_markup_amount" => "s.current_markup_amount",
             "current_variation_amount" => "s.current_variation_amount",
             "current_statement_amount" => "s.current_statement_amount",
@@ -394,7 +445,7 @@ final class ClientProgressStatementRepository
             "approved_by_name" => "au.name",
         ];
         $sql =
-            "SELECT s.id,s.statement_code,s.statement_number,s.statement_sequence,s.statement_date,CASE WHEN s.status='approved' THEN s.client_name_snapshot ELSE COALESCE(c.company_name,c.name) END client_name,CASE WHEN s.status='approved' THEN s.project_name_snapshot ELSE p.name END project_name,CASE WHEN s.status='approved' THEN s.contract_code_snapshot ELSE cc.contract_code END contract_code,COALESCE(s.pricing_method_snapshot,cc.pricing_method) pricing_method,s.current_cost_amount,s.current_markup_amount,s.current_variation_amount,s.current_statement_amount,s.cumulative_statement_amount,s.status,au.name approved_by_name" .
+            "SELECT s.id,s.statement_code,s.statement_number,s.statement_sequence,s.statement_date,CASE WHEN s.status='approved' THEN s.client_name_snapshot ELSE COALESCE(c.company_name,c.name) END client_name,CASE WHEN s.status='approved' THEN s.project_name_snapshot ELSE p.name END project_name,CASE WHEN s.status='approved' THEN s.contract_code_snapshot ELSE cc.contract_code END contract_code,COALESCE(s.pricing_method_snapshot,cc.pricing_method) pricing_method,COALESCE(s.current_cost_amount,s.current_boq_amount) current_cost_amount,s.current_markup_amount,s.current_variation_amount,s.current_statement_amount,s.cumulative_statement_amount,s.status,au.name approved_by_name" .
             $from .
             $where .
             " ORDER BY " .

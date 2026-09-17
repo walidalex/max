@@ -2,7 +2,13 @@
 
 ## Purpose
 
-This module records client-facing progress statements. Phase 1 supports `cost_plus` Client Contracts only. BOQ and Lump Sum billing are future extensions and are deliberately not implemented.
+This module records client-facing progress statements for `cost_plus` and `boq` Client Contracts. Lump Sum billing is deliberately not implemented.
+
+## BOQ billing
+
+BOQ statements require an approved Client Contract BOQ. Every approved BOQ item is seeded into the draft with a zero current quantity. At approval the service locks the Client Contract, re-reads the approved BOQ, recalculates prior quantities and prior approved item amounts, prevents cumulative quantity above the contractual quantity, and freezes section, item, unit, quantity, rate, and amount snapshots.
+
+Current item amount is `ROUND(current_quantity × unit_rate, 2)`. Previous amount is the sum of frozen `current_amount` values from earlier approved BOQ statements, not a recalculation using the current source rate. Current Statement is Current BOQ plus signed Variation allocations. BOQ never receives Cost Plus markup.
 
 ## Phase 1 billing assumption
 
@@ -43,4 +49,4 @@ The latest approved cumulative values become the next statement's previous value
 
 ## Future integration
 
-Client Receipts and Receipt Allocations will later settle approved `current_statement_amount` values. This module contains no paid, received, balance, receipt status, VAT, retention, penalty, or accounting-journal fields. Future phases may add BOQ billing and dedicated reversal/credit mechanisms without changing approved history.
+Client Receipts and Receipt Allocations settle approved `current_statement_amount` values without depending on pricing method. This module contains no paid, received, balance, receipt status, VAT, retention, penalty, or accounting-journal fields. Future phases may add Lump Sum billing and dedicated reversal/credit mechanisms without changing approved history.

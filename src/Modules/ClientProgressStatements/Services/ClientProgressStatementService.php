@@ -5,6 +5,7 @@ use App\Core\Auth\Auth;
 use App\Core\Database\Database;
 use App\Core\Exceptions\BusinessRuleException;
 use App\Modules\ClientProgressStatements\Calculators\CostPlusStatementCalculator;
+use App\Modules\ClientProgressStatements\Calculators\BoqStatementCalculator;
 use App\Modules\ClientProgressStatements\DTOs\ClientProgressStatementData;
 use App\Modules\ClientProgressStatements\DTOs\ClientProgressStatementTableQuery;
 use App\Modules\ClientProgressStatements\Repositories\ClientProgressStatementRepository;
@@ -19,6 +20,7 @@ final class ClientProgressStatementService
     public function __construct(
         private readonly ClientProgressStatementRepository $statements,
         private readonly CostPlusStatementCalculator $calculator,
+        private readonly BoqStatementCalculator $boqCalculator,
         private readonly NumberGeneratorService $numbers,
         private readonly Database $db,
         private readonly Auth $auth,
@@ -91,8 +93,21 @@ final class ClientProgressStatementService
                     $d,
                     $this->user(),
                 );
+                if ($contract["pricing_method"] === "boq") {
+                    if ($this->statements->approvedBoq($contractId) === null) {
+                        throw new BusinessRuleException("يجب اعتماد جدول كميات عقد العميل قبل إنشاء المستخلص.");
+                    }
+                    $this->statements->seedBoqDraft($id, $contractId);
+                }
             } else {
                 $this->statements->updateDraft($id, $d);
+            }
+            if ($contract["pricing_method"] === "boq") {
+                if ($d->costIds !== []) throw new BusinessRuleException("لا تستخدم التكاليف الفعلية في مستخلص BOQ.");
+                $expected = $this->statements->boqDraftItemIds($id);
+                $provided = array_keys($d->boqQuantities); sort($provided);
+                if ($expected === [] || $expected !== $provided) throw new BusinessRuleException("يجب إرسال الكميات الحالية لجميع بنود جدول الكميات المعتمد.");
+                $this->statements->updateBoqDraftQuantities($id, $d->boqQuantities);
             }
             $eligible = array_fill_keys(
                 array_map(
@@ -127,7 +142,7 @@ final class ClientProgressStatementService
             }
             $this->statements->syncDraftDetails(
                 $id,
-                $d->costIds,
+                $contract["pricing_method"] === "cost_plus" ? $d->costIds : [],
                 $d->variations,
             );
             return $id;
@@ -161,6 +176,10 @@ final class ClientProgressStatementService
                 throw new BusinessRuleException(
                     "لا يمكن اعتماد مستخلص بتاريخ أقدم من آخر مستخلص معتمد للعقد.",
                 );
+            }
+            if ($contract["pricing_method"] === "boq") {
+                $this->approveBoqLocked($id, $contract, $statement, $latest);
+                return;
             }
             $costDetails = $this->statements->lockCostDetails($id);
             $costs = $this->statements->lockSelectedCosts($id);
@@ -295,12 +314,49 @@ final class ClientProgressStatementService
             $this->assertCancelledSnapshots($cancelled ?? []);
         });
     }
+    private function approveBoqLocked(int $id,array $contract,array $statement,?array $latest):void
+    {
+        $details=$this->statements->lockBoqDetails($id);
+        $boq=$this->statements->approvedBoq((int)$contract['id'],true);
+        if($boq===null)throw new BusinessRuleException('يجب وجود جدول كميات معتمد للعقد قبل اعتماد المستخلص.');
+        $sources=$this->statements->lockContractBoqItems((int)$boq['id']);
+        if($details===[]||count($details)!==count($sources))throw new BusinessRuleException('بنود مسودة المستخلص لا تطابق جدول الكميات المعتمد. حدّث المسودة وأعد المحاولة.');
+        $sourceById=array_column($sources,null,'id');
+        $calculations=[];
+        foreach($details as $detail){
+            $source=$sourceById[$detail['contract_boq_item_id']]??null;
+            if($source===null)throw new BusinessRuleException('أحد بنود BOQ لم يعد تابعًا لجدول الكميات المعتمد.');
+            if($source['quantity']===null||$source['unit_rate']===null)throw new BusinessRuleException('يتعذر اعتماد المستخلص لأن أحد بنود جدول الكميات بلا كمية أو سعر وحدة.');
+            $calculation=$this->boqCalculator->line((int)$source['id'],(string)$detail['current_quantity'],(string)$source['quantity'],(string)$source['unit_rate']);
+            if((int)($calculation['over_quantity']??1)===1)throw new BusinessRuleException('الكمية التراكمية لأحد بنود BOQ تتجاوز كمية العقد.');
+            $calculations[(int)$detail['id']]=[$source,$calculation];
+        }
+        $variationDetails=$this->statements->lockVariationDetails($id);
+        $variations=$this->statements->lockSelectedVariations($id);
+        if(count($variationDetails)!==count($variations))throw new BusinessRuleException('تعذر قراءة جميع التعديلات المختارة.');
+        $variationById=array_column($variations,null,'id');
+        foreach($variationDetails as $detail){
+            $variation=$variationById[$detail['contract_variation_id']]??null;
+            if($variation===null||$variation['status']!=='approved'||(int)$variation['client_contract_id']!==(int)$contract['id']||!in_array($variation['amount_effect'],['increase','decrease'],true))throw new BusinessRuleException('أحد التعديلات المختارة لم يعد مؤهلًا للفوترة.');
+            $used=$this->statements->decimalAdd((string)$variation['previous_billed_amount'],(string)$detail['current_billed_amount']);
+            if($this->statements->decimalCompare($used,(string)$variation['amount'])>0)throw new BusinessRuleException('مبلغ فوترة أحد التعديلات يتجاوز الرصيد المتبقي المعتمد.');
+        }
+        foreach($calculations as $detailId=>[$source,$calculation])$this->statements->commitBoqItem($detailId,$source,$calculation);
+        foreach($variationDetails as $detail){$variation=$variationById[$detail['contract_variation_id']];$this->statements->commitVariation((int)$detail['id'],$variation,(string)$variation['previous_billed_amount']);}
+        $calculation=$this->boqCalculator->header($id,$this->statements->currentVariationTotal($id),$latest);
+        if($this->statements->decimalCompare((string)$calculation['current_statement_amount'],'0.00')<=0)throw new BusinessRuleException('يجب أن تكون قيمة المستخلص الحالي أكبر من صفر.');
+        $this->statements->approveBoq($id,$this->statements->nextSequence((int)$contract['id']),$this->user(),$calculation,$contract);
+        $verified=$this->statements->lockStatement($id);
+        if(($verified['status']??null)!=='approved')throw new \RuntimeException('BOQ statement approval update failed.');
+        $this->assertApprovedSnapshots($verified);
+    }
     public function details(int $id): array
     {
         $s = $this->find($id);
         return [
             "statement" => $s,
             "costs" => $this->statements->costs($id),
+            "boqItems" => $this->statements->boqItems($id),
             "variations" => $this->statements->variations($id),
         ];
     }
@@ -325,6 +381,18 @@ final class ClientProgressStatementService
     {
         $this->find($id);
         return $this->statements->availableVariations($id);
+    }
+    public function getBoqItemsForContract(int $id): array
+    {
+        $contract=$this->contract($id);$this->assertContract($contract);
+        if($contract['pricing_method']!=='boq')return [];
+        if($this->statements->approvedBoq($id)===null)throw new BusinessRuleException('يجب اعتماد جدول كميات عقد العميل قبل إنشاء المستخلص.');
+        return $this->statements->boqItemsForContract($id);
+    }
+    public function getBoqItems(int $id): array
+    {
+        $statement=$this->find($id);
+        return $this->statements->boqItems((int)$statement['id']);
     }
     public function getApprovedStatementTotal(int $id): string
     {
@@ -375,6 +443,9 @@ final class ClientProgressStatementService
                 "previous_markup_amount",
                 "current_markup_amount",
                 "cumulative_markup_amount",
+                "previous_boq_amount",
+                "current_boq_amount",
+                "cumulative_boq_amount",
                 "previous_variation_amount",
                 "current_variation_amount",
                 "cumulative_variation_amount",
@@ -397,21 +468,13 @@ final class ClientProgressStatementService
     }
     private function assertApprovedSnapshots(array $s): void
     {
-        foreach (
-            [
+        $common = [
                 "statement_sequence",
                 "pricing_method_snapshot",
-                "markup_percentage_snapshot",
                 "client_name_snapshot",
                 "project_code_snapshot",
                 "project_name_snapshot",
                 "contract_code_snapshot",
-                "previous_cost_amount",
-                "current_cost_amount",
-                "cumulative_cost_amount",
-                "previous_markup_amount",
-                "current_markup_amount",
-                "cumulative_markup_amount",
                 "previous_variation_amount",
                 "current_variation_amount",
                 "cumulative_variation_amount",
@@ -420,9 +483,11 @@ final class ClientProgressStatementService
                 "cumulative_statement_amount",
                 "approved_at",
                 "approved_by",
-            ]
-            as $field
-        ) {
+            ];
+        $method = $s['pricing_method_snapshot']==='boq'
+            ? ['previous_boq_amount','current_boq_amount','cumulative_boq_amount']
+            : ['markup_percentage_snapshot','previous_cost_amount','current_cost_amount','cumulative_cost_amount','previous_markup_amount','current_markup_amount','cumulative_markup_amount'];
+        foreach (array_merge($common,$method) as $field) {
             if ($s[$field] === null) {
                 throw new \RuntimeException(
                     "Approved statement snapshot is incomplete.",
@@ -457,6 +522,9 @@ final class ClientProgressStatementService
                 "previous_markup_amount",
                 "current_markup_amount",
                 "cumulative_markup_amount",
+                "previous_boq_amount",
+                "current_boq_amount",
+                "cumulative_boq_amount",
                 "previous_variation_amount",
                 "current_variation_amount",
                 "cumulative_variation_amount",
@@ -477,9 +545,9 @@ final class ClientProgressStatementService
     }
     private function assertContract(array $c): void
     {
-        if ($c["pricing_method"] !== "cost_plus") {
+        if (!in_array($c["pricing_method"], ["cost_plus","boq"], true)) {
             throw new BusinessRuleException(
-                "المرحلة الحالية تدعم عقود Cost Plus فقط.",
+                "المستخلصات الحالية تدعم عقود Cost Plus وBOQ فقط.",
             );
         }
         if (!in_array($c["status"], self::ELIGIBLE_CONTRACT_STATUSES, true)) {
@@ -487,7 +555,7 @@ final class ClientProgressStatementService
                 "حالة العقد لا تسمح بإنشاء أو اعتماد مستخلص عميل.",
             );
         }
-        if ($c["markup_percentage"] === null) {
+        if ($c["pricing_method"] === "cost_plus" && $c["markup_percentage"] === null) {
             throw new BusinessRuleException(
                 "نسبة Cost Plus غير محددة في العقد.",
             );

@@ -72,6 +72,16 @@ final class ClientProgressStatementValidator
                 "current_billed_amount" => $amount,
             ];
         }
+        $boq = [];
+        foreach ((array) ($i["boq_quantities"] ?? []) as $id => $quantity) {
+            $id = filter_var($id, FILTER_VALIDATE_INT, ["options" => ["min_range" => 1]]);
+            $quantity = $this->decimal((string) $quantity, 4, 14);
+            if ($id === false || $quantity === null) {
+                $e["boq_quantities"][] = "الكمية الحالية لأحد بنود جدول الكميات غير صالحة.";
+                continue;
+            }
+            $boq[(int) $id] = $quantity;
+        }
         if ($e) {
             throw new ValidationException($e);
         }
@@ -86,6 +96,7 @@ final class ClientProgressStatementValidator
             $n($i["notes"] ?? ""),
             array_values($costs),
             array_values($vars),
+            $boq,
         );
     }
     private function date(string $v, string $f, array &$e, bool $n): ?string
@@ -100,5 +111,15 @@ final class ClientProgressStatementValidator
             return $n ? null : $v;
         }
         return $v;
+    }
+    private function decimal(string $value, int $scale, int $integerDigits): ?string
+    {
+        $value = trim($value);
+        if (!preg_match('/^\d{1,' . $integerDigits . '}(?:\.\d{1,' . $scale . '})?$/', $value)) {
+            return null;
+        }
+        [$integer, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+        $integer = ltrim($integer, '0');
+        return ($integer === '' ? '0' : $integer) . '.' . str_pad($fraction, $scale, '0');
     }
 }

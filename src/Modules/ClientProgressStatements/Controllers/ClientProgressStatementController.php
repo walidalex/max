@@ -57,6 +57,7 @@ final class ClientProgressStatementController
             $this->service->getAvailableVariationsForContract(
                 (int) $contract["id"],
             ),
+            $contract['pricing_method']==='boq'?$this->service->getBoqItemsForContract((int)$contract['id']):[],
         );
     }
     public function store(Request $r): Response
@@ -94,6 +95,7 @@ final class ClientProgressStatementController
             $s,
             $this->service->getEligibleActualCosts($id),
             $this->service->getAvailableVariations($id),
+            $s['pricing_method']==='boq'?$this->service->getBoqItems($id):[],
         );
     }
     public function update(Request $r): Response
@@ -130,6 +132,7 @@ final class ClientProgressStatementController
         ?array $s,
         array $costs,
         array $vars,
+        array $boqItems,
     ): Response {
         return Response::html(
             $this->view->render("modules/client-progress-statements/form", [
@@ -138,6 +141,7 @@ final class ClientProgressStatementController
                 "statement" => $s,
                 "costs" => $costs,
                 "variations" => $vars,
+                "boqItems" => $boqItems,
             ]),
         );
     }
