@@ -39,7 +39,7 @@ try {
     $otherProjectId = (int) $db->connection()->insert_id;
     $auth->login($user);
 
-    $data = new SupplierInvoiceData($vendorId, $projectId, 'INV-01', '2026-09-01', '2026-09-30', null, null, [
+    $data = new SupplierInvoiceData($vendorId, $projectId, null, 'INV-01', '2026-09-01', '2026-09-30', null, null, [
         ['description' => 'A', 'cost_code_id' => (int) $code['id'], 'amount' => '0.10', 'sort_order' => 1],
         ['description' => 'B', 'cost_code_id' => (int) $code['id'], 'amount' => '0.20', 'sort_order' => 2],
     ]);
@@ -78,14 +78,14 @@ try {
     } catch (BusinessRuleException) {
     }
     try {
-        $service->save(new SupplierInvoiceData($vendorId, $projectId, 'INV-01', '2026-09-01', null, null, null, [
+        $service->save(new SupplierInvoiceData($vendorId, $projectId, null, 'INV-01', '2026-09-01', null, null, null, [
             ['description' => 'X', 'cost_code_id' => (int) $code['id'], 'amount' => '1.00', 'sort_order' => 1],
         ]), $invoiceId);
         throw new RuntimeException('Approved invoice was mutable.');
     } catch (BusinessRuleException) {
     }
 
-    $cancelledId = $service->save(new SupplierInvoiceData($vendorId, $projectId, 'INV-CANCEL', '2026-09-02', null, null, null, [
+    $cancelledId = $service->save(new SupplierInvoiceData($vendorId, $projectId, null, 'INV-CANCEL', '2026-09-02', null, null, null, [
         ['description' => 'C', 'cost_code_id' => (int) $code['id'], 'amount' => '1.00', 'sort_order' => 1],
     ]));
     $invoiceIds[] = $cancelledId;

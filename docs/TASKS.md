@@ -23,12 +23,13 @@
 - [x] Cost Plus Client Progress Statements with immutable approval snapshots and print view.
 - [x] Client Receipts and append-only Receipt Allocation with derived outstanding balances
 - [x] Purchase Orders Phase 1 with commitment-only approval, DECIMAL totals, snapshots, and lifecycle controls
+- [x] Optional approved Purchase Order linking on Supplier Invoices with locked approval revalidation
 
 ## Planned
 
 - [ ] BOQ Client Progress Statements
 - [ ] Supplier Invoices and Supplier Payments
-- [ ] Purchase Order receiving and Supplier Invoice linking
+- [ ] Purchase Order receiving, consumption, and close tracking
 - [ ] Cost Control, profitability, reports, and dashboard
 - [ ] Financial reversals and credit adjustments
 - [ ] Login throttling and brute-force protection before public production deployment

@@ -104,5 +104,7 @@ Client Progress Statements are stored in client_progress_statements, client_prog
 
 - `purchase_orders` records a vendor commitment for a project; approval has no project-cost, payable, payment, inventory, tax, or GL effect.
 - `purchase_order_lines` stores DECIMAL quantities and unit prices. MariaDB generates each `line_total`, and the approved header freezes the SQL-derived total.
+- The SQL sum is checked against the full `DECIMAL(18,2)` range before saving and again before approval.
 - Drafts are editable or cancellable. Approved and cancelled orders are immutable, and approval freezes vendor, project, work-section, and cost-code snapshots.
 - Codes use an independent yearly atomic sequence in the format `PO-YYYY-NNNN`.
+- `supplier_invoices.purchase_order_id` optionally references an approved order with the same vendor and project. Invoice approval locks and revalidates the order and freezes `purchase_order_code_snapshot`; the order itself remains commitment-only.
