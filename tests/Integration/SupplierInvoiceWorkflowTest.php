@@ -1,1 +1,98 @@
-<?php declare(strict_types=1);use App\Core\Auth\Auth;use App\Core\Database\Database;use App\Core\Exceptions\BusinessRuleException;use App\Modules\SupplierInvoices\DTOs\SupplierInvoiceData;use App\Modules\SupplierInvoices\Services\SupplierInvoiceService;/** @var Database $db */$db=$app->make(Database::class);/** @var SupplierInvoiceService $service */$service=$app->make(SupplierInvoiceService::class);/** @var Auth $auth */$auth=$app->make(Auth::class);$user=$db->execute('SELECT id,name,username FROM users WHERE is_active=1 LIMIT 1')->fetch_assoc();$code=$db->execute('SELECT id FROM cost_codes WHERE is_active=1 LIMIT 1')->fetch_assoc();$client=$db->execute('SELECT id FROM clients LIMIT 1')->fetch_assoc();if(!$user||!$code||!$client)throw new RuntimeException('Supplier invoice fixtures unavailable.');$s=(string)random_int(100000,999999);$vendor=$project=0;$ids=[];try{$db->execute("INSERT INTO vendors(vendor_code,vendor_type,name)VALUES(?,'supplier','Invoice Supplier')",['SIV-'.$s]);$vendor=(int)$db->connection()->insert_id;$db->execute("INSERT INTO projects(project_code,name,client_id,project_type,status)VALUES(?,'Invoice Project',?,'contracting','active')",['SIP-'.$s,(int)$client['id']]);$project=(int)$db->connection()->insert_id;$auth->login($user);$data=new SupplierInvoiceData($vendor,$project,'INV-01','2026-09-01','2026-09-30',null,null,[['description'=>'A','cost_code_id'=>(int)$code['id'],'amount'=>'0.10','sort_order'=>1],['description'=>'B','cost_code_id'=>(int)$code['id'],'amount'=>'0.20','sort_order'=>2]]);$id=$service->save($data);$ids[]=$id;try{$service->save($data);throw new RuntimeException('Duplicate invoice number accepted.');}catch(BusinessRuleException){}$service->approve($id);$invoice=$service->find($id);if($invoice['status']!=='approved'||$invoice['total_amount']!=='0.30')throw new RuntimeException('Exact supplier invoice total failed.');$costs=$db->execute("SELECT COUNT(*) n,CAST(SUM(amount) AS DECIMAL(18,2)) total FROM project_actual_costs WHERE source_type='supplier_invoice' AND source_id=?",[$id])->fetch_assoc();if((int)$costs['n']!==2||$costs['total']!=='0.30')throw new RuntimeException('Supplier invoice costs were not recognized exactly once.');try{$service->approve($id);throw new RuntimeException('Double approval accepted.');}catch(BusinessRuleException){}try{$service->save(new SupplierInvoiceData($vendor,$project,'INV-01','2026-09-01',null,null,null,[['description'=>'X','cost_code_id'=>(int)$code['id'],'amount'=>'1.00','sort_order'=>1]]),$id);throw new RuntimeException('Approved invoice was mutable.');}catch(BusinessRuleException){}$cancel=$service->save(new SupplierInvoiceData($vendor,$project,'INV-CANCEL','2026-09-02',null,null,null,[['description'=>'C','cost_code_id'=>(int)$code['id'],'amount'=>'1.00','sort_order'=>1]]));$ids[]=$cancel;$service->cancel($cancel);$effect=$db->execute("SELECT COUNT(*) n FROM project_actual_costs WHERE source_type='supplier_invoice' AND source_id=?",[$cancel])->fetch_assoc();if((int)$effect['n']!==0)throw new RuntimeException('Cancelled invoice had financial effect.');}finally{$auth->logout();foreach($ids as$id){$db->execute("DELETE FROM project_actual_costs WHERE source_type='supplier_invoice' AND source_id=?",[$id]);$db->execute('DELETE FROM supplier_invoice_lines WHERE supplier_invoice_id=?',[$id]);$db->execute('DELETE FROM supplier_invoices WHERE id=?',[$id]);}$project&&$db->execute('DELETE FROM projects WHERE id=?',[$project]);$vendor&&$db->execute('DELETE FROM vendors WHERE id=?',[$vendor]);}
+<?php
+
+declare(strict_types=1);
+
+use App\Core\Auth\Auth;
+use App\Core\Database\Database;
+use App\Core\Exceptions\BusinessRuleException;
+use App\Modules\SupplierInvoices\DTOs\SupplierInvoiceData;
+use App\Modules\SupplierInvoices\Services\SupplierInvoiceService;
+
+/** @var Database $db */
+$db = $app->make(Database::class);
+/** @var SupplierInvoiceService $service */
+$service = $app->make(SupplierInvoiceService::class);
+/** @var Auth $auth */
+$auth = $app->make(Auth::class);
+
+$user = $db->execute('SELECT id, name, username FROM users WHERE is_active = 1 LIMIT 1')->fetch_assoc();
+$code = $db->execute('SELECT id FROM cost_codes WHERE is_active = 1 LIMIT 1')->fetch_assoc();
+if (!$user || !$code) {
+    throw new RuntimeException('Supplier invoice fixtures unavailable.');
+}
+
+$suffix = (string) random_int(100000, 999999);
+$clientId = $vendorId = $projectId = 0;
+$invoiceIds = [];
+
+try {
+    $db->execute("INSERT INTO clients(client_code, client_type, name) VALUES (?, 'individual', 'Invoice Client')", ['SIC-' . $suffix]);
+    $clientId = (int) $db->connection()->insert_id;
+    $db->execute("INSERT INTO vendors(vendor_code, vendor_type, name) VALUES (?, 'supplier', 'Invoice Supplier')", ['SIV-' . $suffix]);
+    $vendorId = (int) $db->connection()->insert_id;
+    $db->execute("INSERT INTO projects(project_code, name, client_id, project_type, status) VALUES (?, 'Invoice Project', ?, 'contracting', 'active')", ['SIP-' . $suffix, $clientId]);
+    $projectId = (int) $db->connection()->insert_id;
+    $auth->login($user);
+
+    $data = new SupplierInvoiceData($vendorId, $projectId, 'INV-01', '2026-09-01', '2026-09-30', null, null, [
+        ['description' => 'A', 'cost_code_id' => (int) $code['id'], 'amount' => '0.10', 'sort_order' => 1],
+        ['description' => 'B', 'cost_code_id' => (int) $code['id'], 'amount' => '0.20', 'sort_order' => 2],
+    ]);
+    $invoiceId = $service->save($data);
+    $invoiceIds[] = $invoiceId;
+
+    try {
+        $service->save($data);
+        throw new RuntimeException('Duplicate invoice number accepted.');
+    } catch (BusinessRuleException) {
+    }
+
+    $service->approve($invoiceId);
+    $invoice = $service->find($invoiceId);
+    if ($invoice['status'] !== 'approved' || $invoice['total_amount'] !== '0.30') {
+        throw new RuntimeException('Exact supplier invoice total failed.');
+    }
+    $costs = $db->execute("SELECT COUNT(*) n, CAST(SUM(amount) AS DECIMAL(18,2)) total FROM project_actual_costs WHERE source_type = 'supplier_invoice' AND source_id = ?", [$invoiceId])->fetch_assoc();
+    if ((int) $costs['n'] !== 2 || $costs['total'] !== '0.30') {
+        throw new RuntimeException('Supplier invoice costs were not recognized exactly once.');
+    }
+
+    try {
+        $service->approve($invoiceId);
+        throw new RuntimeException('Double approval accepted.');
+    } catch (BusinessRuleException) {
+    }
+    try {
+        $service->save(new SupplierInvoiceData($vendorId, $projectId, 'INV-01', '2026-09-01', null, null, null, [
+            ['description' => 'X', 'cost_code_id' => (int) $code['id'], 'amount' => '1.00', 'sort_order' => 1],
+        ]), $invoiceId);
+        throw new RuntimeException('Approved invoice was mutable.');
+    } catch (BusinessRuleException) {
+    }
+
+    $cancelledId = $service->save(new SupplierInvoiceData($vendorId, $projectId, 'INV-CANCEL', '2026-09-02', null, null, null, [
+        ['description' => 'C', 'cost_code_id' => (int) $code['id'], 'amount' => '1.00', 'sort_order' => 1],
+    ]));
+    $invoiceIds[] = $cancelledId;
+    $service->cancel($cancelledId);
+    $effect = $db->execute("SELECT COUNT(*) n FROM project_actual_costs WHERE source_type = 'supplier_invoice' AND source_id = ?", [$cancelledId])->fetch_assoc();
+    if ((int) $effect['n'] !== 0) {
+        throw new RuntimeException('Cancelled invoice had financial effect.');
+    }
+} finally {
+    $auth->logout();
+    foreach ($invoiceIds as $invoiceId) {
+        $db->execute("DELETE FROM project_actual_costs WHERE source_type = 'supplier_invoice' AND source_id = ?", [$invoiceId]);
+        $db->execute('DELETE FROM supplier_invoice_lines WHERE supplier_invoice_id = ?', [$invoiceId]);
+        $db->execute('DELETE FROM supplier_invoices WHERE id = ?', [$invoiceId]);
+    }
+    if ($projectId) {
+        $db->execute('DELETE FROM projects WHERE id = ?', [$projectId]);
+    }
+    if ($vendorId) {
+        $db->execute('DELETE FROM vendors WHERE id = ?', [$vendorId]);
+    }
+    if ($clientId) {
+        $db->execute('DELETE FROM clients WHERE id = ?', [$clientId]);
+    }
+}
