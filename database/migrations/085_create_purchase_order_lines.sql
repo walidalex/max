@@ -1,0 +1,23 @@
+CREATE TABLE purchase_order_lines (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    purchase_order_id BIGINT UNSIGNED NOT NULL,
+    description VARCHAR(500) NOT NULL,
+    cost_code_id BIGINT UNSIGNED NOT NULL,
+    quantity DECIMAL(18,4) NOT NULL,
+    unit_price DECIMAL(18,2) NOT NULL,
+    line_total DECIMAL(18,2) GENERATED ALWAYS AS (ROUND(quantity * unit_price,2)) STORED,
+    sort_order INT UNSIGNED NOT NULL,
+    work_section_code_snapshot VARCHAR(20) NULL,
+    work_section_name_snapshot VARCHAR(190) NULL,
+    cost_code_snapshot VARCHAR(30) NULL,
+    cost_code_name_snapshot VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_purchase_order_lines_order (purchase_order_id,sort_order,id),
+    KEY idx_purchase_order_lines_cost_code (cost_code_id),
+    CONSTRAINT fk_purchase_order_lines_order FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_purchase_order_lines_cost_code FOREIGN KEY (cost_code_id) REFERENCES cost_codes(id) ON DELETE RESTRICT,
+    CONSTRAINT chk_purchase_order_lines_quantity CHECK (quantity>0),
+    CONSTRAINT chk_purchase_order_lines_unit_price CHECK (unit_price>=0),
+    CONSTRAINT chk_purchase_order_lines_sort CHECK (sort_order>0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

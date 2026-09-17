@@ -22,12 +22,13 @@
 - [x] Implement subcontract payments with earned-value ceilings and transactional posting
 - [x] Cost Plus Client Progress Statements with immutable approval snapshots and print view.
 - [x] Client Receipts and append-only Receipt Allocation with derived outstanding balances
+- [x] Purchase Orders Phase 1 with commitment-only approval, DECIMAL totals, snapshots, and lifecycle controls
 
 ## Planned
 
 - [ ] BOQ Client Progress Statements
 - [ ] Supplier Invoices and Supplier Payments
-- [ ] Procurement and Purchase Orders
+- [ ] Purchase Order receiving and Supplier Invoice linking
 - [ ] Cost Control, profitability, reports, and dashboard
 - [ ] Financial reversals and credit adjustments
 - [ ] Login throttling and brute-force protection before public production deployment

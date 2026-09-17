@@ -99,3 +99,10 @@ Client Progress Statements are stored in client_progress_statements, client_prog
 ## Client receipts
 
 `client_receipts` stores immutable posted cash events with frozen client/project/contract identity. `client_receipt_allocations` stores append-only settlement rows against approved Client Progress Statements. Receipt and statement balances are derived with SQL `DECIMAL`; no paid or balance columns are added to statements. Foreign keys use `ON DELETE RESTRICT`, and the Client Contract row serializes allocation activity.
+
+## Purchase orders
+
+- `purchase_orders` records a vendor commitment for a project; approval has no project-cost, payable, payment, inventory, tax, or GL effect.
+- `purchase_order_lines` stores DECIMAL quantities and unit prices. MariaDB generates each `line_total`, and the approved header freezes the SQL-derived total.
+- Drafts are editable or cancellable. Approved and cancelled orders are immutable, and approval freezes vendor, project, work-section, and cost-code snapshots.
+- Codes use an independent yearly atomic sequence in the format `PO-YYYY-NNNN`.

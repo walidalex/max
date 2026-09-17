@@ -9,6 +9,7 @@ $expected = [
     'client_receipts.allocate', 'client_receipts.cancel', 'client_receipts.create', 'client_receipts.edit', 'client_receipts.post', 'client_receipts.view',
     'client_progress_statements.approve', 'client_progress_statements.cancel', 'client_progress_statements.create', 'client_progress_statements.edit', 'client_progress_statements.view',
     'project_costs.approve', 'project_costs.cancel', 'project_costs.create', 'project_costs.edit', 'project_costs.view',
+    'purchase_orders.approve', 'purchase_orders.cancel', 'purchase_orders.create', 'purchase_orders.edit', 'purchase_orders.view',
     'supplier_invoices.approve', 'supplier_invoices.cancel', 'supplier_invoices.create', 'supplier_invoices.edit', 'supplier_invoices.view',
     'supplier_payments.cancel', 'supplier_payments.create', 'supplier_payments.edit', 'supplier_payments.post', 'supplier_payments.view',
     'subcontract_payments.cancel', 'subcontract_payments.create', 'subcontract_payments.edit', 'subcontract_payments.post', 'subcontract_payments.view',

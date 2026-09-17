@@ -41,6 +41,7 @@ $groups = [
         ['label'=>'سندات قبض العملاء','href'=>'/client-receipts','icon'=>'ti-receipt','permission'=>'client_receipts.view','patterns'=>['/client-receipts'],'contains'=>['/receipts']],
     ]],
     ['id'=>'suppliers-procurement','label'=>'الموردون والمشتريات','icon'=>'ti-shopping-cart','items'=>[
+        ['label'=>'أوامر الشراء','href'=>'/purchase-orders','icon'=>'ti-clipboard-list','permission'=>'purchase_orders.view','patterns'=>['/purchase-orders']],
         ['label'=>'فواتير الموردين','href'=>'/supplier-invoices','icon'=>'ti-file-invoice','permission'=>'supplier_invoices.view','patterns'=>['/supplier-invoices']],
         ['label'=>'مدفوعات الموردين','href'=>'/supplier-payments','icon'=>'ti-cash-banknote','permission'=>'supplier_payments.view','patterns'=>['/supplier-payments']],
     ]],

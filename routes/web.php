@@ -30,6 +30,8 @@ use App\Modules\SupplierInvoices\Controllers\SupplierInvoiceController;
 use App\Modules\SupplierInvoices\Controllers\SupplierInvoiceDataTableController;
 use App\Modules\SupplierPayments\Controllers\SupplierPaymentController;
 use App\Modules\SupplierPayments\Controllers\SupplierPaymentDataTableController;
+use App\Modules\PurchaseOrders\Controllers\PurchaseOrderController;
+use App\Modules\PurchaseOrders\Controllers\PurchaseOrderDataTableController;
 
 $app->router()->get('/login',[AuthenticationController::class,'form'],['guest']);
 $app->router()->post('/login',[AuthenticationController::class,'login'],['guest']);
@@ -208,3 +210,13 @@ $app->router()->post('/supplier-payments/{id}/post',[SupplierPaymentController::
 $app->router()->post('/supplier-payments/{id}/cancel',[SupplierPaymentController::class,'cancel'],['auth','permission:supplier_payments.cancel']);
 $app->router()->get('/supplier-payments/{id}/print',[SupplierPaymentController::class,'print'],['auth','permission:supplier_payments.view']);
 $app->router()->get('/api/supplier-payments',[SupplierPaymentDataTableController::class,'index'],['auth','permission:supplier_payments.view']);
+$app->router()->get('/purchase-orders',[PurchaseOrderController::class,'index'],['auth','permission:purchase_orders.view']);
+$app->router()->get('/purchase-orders/create',[PurchaseOrderController::class,'create'],['auth','permission:purchase_orders.create']);
+$app->router()->post('/purchase-orders',[PurchaseOrderController::class,'store'],['auth','permission:purchase_orders.create']);
+$app->router()->get('/purchase-orders/{id}',[PurchaseOrderController::class,'show'],['auth','permission:purchase_orders.view']);
+$app->router()->get('/purchase-orders/{id}/edit',[PurchaseOrderController::class,'edit'],['auth','permission:purchase_orders.edit']);
+$app->router()->post('/purchase-orders/{id}/edit',[PurchaseOrderController::class,'update'],['auth','permission:purchase_orders.edit']);
+$app->router()->post('/purchase-orders/{id}/approve',[PurchaseOrderController::class,'approve'],['auth','permission:purchase_orders.approve']);
+$app->router()->post('/purchase-orders/{id}/cancel',[PurchaseOrderController::class,'cancel'],['auth','permission:purchase_orders.cancel']);
+$app->router()->get('/purchase-orders/{id}/print',[PurchaseOrderController::class,'print'],['auth','permission:purchase_orders.view']);
+$app->router()->get('/api/purchase-orders',[PurchaseOrderDataTableController::class,'index'],['auth','permission:purchase_orders.view']);

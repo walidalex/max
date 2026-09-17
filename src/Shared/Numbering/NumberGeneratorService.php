@@ -66,4 +66,9 @@ final class NumberGeneratorService
     {
         return sprintf('SUPAY-%d-%04d', $year, $this->sequences->next('supplier_payments:' . $year));
     }
+
+    public function nextPurchaseOrderCode(int $year): string
+    {
+        return sprintf('PO-%d-%04d', $year, $this->sequences->next('purchase_orders:' . $year));
+    }
 }
