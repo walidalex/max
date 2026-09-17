@@ -2,7 +2,13 @@
 $currentPath = '/' . trim((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH), '/');
 $currentPath = $currentPath === '/' ? '/' : $currentPath;
 $can = is_callable($canView ?? null) ? $canView : static fn (string $permission): bool => false;
-$isActive = static function (array $patterns, array $contains = []) use ($currentPath): bool {
+$isActive = static function (array $patterns, array $contains = [], array $matches = [], array $excludes = []) use ($currentPath): bool {
+    foreach ($excludes as $pattern) {
+        if (preg_match($pattern, $currentPath) === 1) {
+            return false;
+        }
+    }
+
     foreach ($patterns as $pattern) {
         if ($currentPath === $pattern || ($pattern !== '/' && str_starts_with($currentPath, $pattern . '/'))) {
             return true;
@@ -15,16 +21,22 @@ $isActive = static function (array $patterns, array $contains = []) use ($curren
         }
     }
 
+    foreach ($matches as $pattern) {
+        if (preg_match($pattern, $currentPath) === 1) {
+            return true;
+        }
+    }
+
     return false;
 };
 $groups = [
     ['id'=>'master-data','label'=>'البيانات الأساسية','icon'=>'ti-database','items'=>[
         ['label'=>'العملاء','href'=>'/clients','icon'=>'ti-address-book','permission'=>'clients.view','patterns'=>['/clients']],
         ['label'=>'الموردون ومقاولو الباطن','href'=>'/vendors','icon'=>'ti-truck-delivery','permission'=>'vendors.view','patterns'=>['/vendors']],
-        ['label'=>'المشاريع','href'=>'/projects','icon'=>'ti-briefcase','permission'=>'projects.view','patterns'=>['/projects']],
+        ['label'=>'المشاريع','href'=>'/projects','icon'=>'ti-briefcase','permission'=>'projects.view','patterns'=>['/projects'],'excludes'=>['#^/projects/[^/]+/costs#']],
     ]],
     ['id'=>'clients-contracts','label'=>'العملاء والعقود','icon'=>'ti-file-certificate','items'=>[
-        ['label'=>'عقود العملاء','href'=>'/contracts','icon'=>'ti-contract','permission'=>'client_contracts.view','patterns'=>['/contracts']],
+        ['label'=>'عقود العملاء','href'=>'/contracts','icon'=>'ti-contract','permission'=>'client_contracts.view','patterns'=>['/contracts','/contract-variations']],
         ['label'=>'مستخلصات العملاء','href'=>'/client-progress-statements','icon'=>'ti-file-dollar','permission'=>'client_progress_statements.view','patterns'=>['/client-progress-statements'],'contains'=>['/progress-statements']],
         ['label'=>'سندات قبض العملاء','href'=>'/client-receipts','icon'=>'ti-receipt','permission'=>'client_receipts.view','patterns'=>['/client-receipts'],'contains'=>['/receipts']],
     ]],
@@ -33,7 +45,7 @@ $groups = [
         ['label'=>'مدفوعات الموردين','href'=>'/supplier-payments','icon'=>'ti-cash-banknote','permission'=>'supplier_payments.view','patterns'=>['/supplier-payments']],
     ]],
     ['id'=>'costs','label'=>'التكاليف','icon'=>'ti-coins','items'=>[
-        ['label'=>'التكاليف الفعلية للمشاريع','href'=>'/project-costs','icon'=>'ti-cash','permission'=>'project_costs.view','patterns'=>['/project-costs']],
+        ['label'=>'التكاليف الفعلية للمشاريع','href'=>'/project-costs','icon'=>'ti-cash','permission'=>'project_costs.view','patterns'=>['/project-costs'],'matches'=>['#^/projects/[^/]+/costs#']],
     ]],
     ['id'=>'subcontractors','label'=>'مقاولو الباطن','icon'=>'ti-building-factory-2','items'=>[
         ['label'=>'عقود مقاولي الباطن','href'=>'/subcontracts','icon'=>'ti-file-invoice','permission'=>'subcontracts.view','patterns'=>['/subcontracts','/subcontract-certificates','/subcontract-payments']],
@@ -74,7 +86,7 @@ $groups = array_values(array_filter($groups, static fn (array $group): bool => $
                         <span class="nav-link-icon"><i class="ti ti-home"></i></span><span class="nav-link-title">الصفحة الرئيسية</span>
                     </a>
                 </li>
-                <?php foreach ($groups as $group): $groupActive = array_any($group['items'], static fn (array $item): bool => $isActive($item['patterns'], $item['contains'] ?? [])); ?>
+                <?php foreach ($groups as $group): $groupActive = array_any($group['items'], static fn (array $item): bool => $isActive($item['patterns'], $item['contains'] ?? [], $item['matches'] ?? [], $item['excludes'] ?? [])); ?>
                     <li class="nav-item">
                         <a class="nav-link<?= $groupActive ? ' active' : '' ?>" href="#sidebar-<?= e($group['id']) ?>" data-bs-toggle="collapse" role="button" aria-expanded="<?= $groupActive ? 'true' : 'false' ?>" aria-controls="sidebar-<?= e($group['id']) ?>">
                             <span class="nav-link-icon"><i class="ti <?= e($group['icon']) ?>"></i></span>
@@ -83,7 +95,7 @@ $groups = array_values(array_filter($groups, static fn (array $group): bool => $
                         </a>
                         <div class="collapse<?= $groupActive ? ' show' : '' ?>" id="sidebar-<?= e($group['id']) ?>">
                             <ul class="nav nav-pills flex-column">
-                                <?php foreach ($group['items'] as $item): $active = $isActive($item['patterns'], $item['contains'] ?? []); ?>
+                                <?php foreach ($group['items'] as $item): $active = $isActive($item['patterns'], $item['contains'] ?? [], $item['matches'] ?? [], $item['excludes'] ?? []); ?>
                                     <li class="nav-item">
                                         <a class="nav-link<?= $active ? ' active' : '' ?>" href="<?= e($item['href']) ?>">
                                             <span class="nav-link-icon"><i class="ti <?= e($item['icon']) ?>"></i></span><span class="nav-link-title"><?= e($item['label']) ?></span>
