@@ -1,8 +1,8 @@
 # Contracting & Interior Design ERP
 
-Clean Arabic RTL modular-monolith foundation built with PHP 8.4, MySQLi, Tabler, and vanilla JavaScript.
+Arabic RTL modular-monolith ERP built with PHP 8.4, MySQLi, Tabler, and vanilla JavaScript.
 
-Current business foundations include permission-based RBAC and a singleton company profile available at `/settings/company`.
+The implemented scope covers core access and master data, contracts and BOQs, subcontract execution and payments, actual project costs, and Cost Plus client progress statements.
 
 ## Requirements
 
@@ -46,6 +46,24 @@ Copy `.env.example` to `.env`, then set the database credentials and a random `A
 On Windows, ensure `extension=mysqli` is enabled in the `php.ini` used by the CLI and web server.
 
 ## Quality checks
+
+Tests are intentionally blocked unless `APP_ENV` is `testing` and the configured database name ends in `_test`. Create a dedicated empty test database, migrate it, and run the suite without reusing a development or production database.
+
+PowerShell example:
+
+```powershell
+$env:APP_ENV="testing"
+$env:DB_DATABASE="hycacmvp_contracting_erp_test"
+php database/migrate.php
+composer db:check
+composer lint
+composer test
+npm run assets:build
+```
+
+Use `.env.testing.example` as a safe reference. If your local test database needs credentials, provide them through external environment variables or an ignored `.env.testing`; never commit them.
+
+External environment variables take precedence over values in `.env`.
 
 ```bash
 composer lint

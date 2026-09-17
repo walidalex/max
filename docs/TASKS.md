@@ -10,7 +10,7 @@
 - [x] Arabic RTL Tabler shell and shared JavaScript helpers
 - [x] SQL migration runner and Foundation example
 
-## Later
+## Implemented business scope
 
 - [x] Implement users, roles, permissions, authentication, and RBAC
 - [x] Implement singleton company profile and protected logo storage
@@ -20,5 +20,14 @@
 - [x] Implement project master, annual atomic numbering, lifecycle status, and server-side DataTables listing
 - [x] Implement subcontract progress certificates, transactional earned-value approval, and server-side history listing
 - [x] Implement subcontract payments with earned-value ceilings and transactional posting
-- [ ] Add real ERP modules only after their requirements and database boundaries are approved
 - [x] Cost Plus Client Progress Statements with immutable approval snapshots and print view.
+
+## Planned
+
+- [ ] Client Receipts and Receipt Allocation
+- [ ] BOQ Client Progress Statements
+- [ ] Supplier Invoices and Supplier Payments
+- [ ] Procurement and Purchase Orders
+- [ ] Cost Control, profitability, reports, and dashboard
+- [ ] Financial reversals and credit adjustments
+- [ ] Login throttling and brute-force protection before public production deployment

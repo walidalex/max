@@ -1,11 +1,20 @@
 # Project
 
-This repository contains the technical foundation for an Arabic RTL contracting and interior design ERP. Business modules are intentionally out of scope for this stage.
+This repository contains an Arabic RTL contracting and interior design ERP implemented as a PHP 8.4 modular monolith.
 
 ## Current scope
 
-Bootstrap, configuration, HTTP routing, database access, validation, sessions, authentication, RBAC, the singleton company profile, secure logo storage, views, error handling, logging, migrations, and frontend assets.
-# Recognized project cost
+- Foundation/Core, authentication, RBAC, company profile, clients, vendors, projects, and Cost Structure.
+- Client Contracts, Contract Variations, Client BOQ, and Cost Plus Client Progress Statements.
+- Subcontracts, Subcontract BOQ, Subcontract Progress Certificates, and Subcontract Payments.
+- Project Actual Costs as the central recognized-cost ledger. Only approved entries count; payments represent settlement and must not duplicate recognized cost.
 
-Project Actual Costs is the central recognized-cost ledger. Only approved entries count. Supplier invoices and subcontract progress may feed it in future; payment records represent settlement and must not create or duplicate project cost.
-Phase 1 Client Progress Statements support Cost Plus contracts using approved Project Actual Costs and partial approved Variation allocations. Client Receipts, BOQ billing, and credit/reversal workflows remain future scope.
+## Planned scope
+
+- Client Receipts and Receipt Allocation.
+- BOQ Client Progress Statements.
+- Supplier Invoices and Supplier Payments.
+- Procurement and Purchase Orders.
+- Cost Control, profitability, reports, and dashboard.
+- Financial reversals and credit adjustments.
+- Login throttling/brute-force protection before public production deployment.

@@ -1,4 +1,7 @@
 /.env
+/.env.testing
+/.env.testing.*
+!/.env.testing.example
 /hycacmvp_contracting_erp.sql
 /vendor/
 /node_modules/

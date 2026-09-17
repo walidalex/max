@@ -6,13 +6,15 @@ The application is a modular monolith. HTTP requests enter through `public/index
 Route -> Controller -> Validator / DTO -> Service -> Repository -> MySQLi -> MySQL / MariaDB
 ```
 
-`src/Core` owns infrastructure. `src/Shared` contains small cross-cutting helpers. Each future business capability must remain inside one folder under `src/Modules`.
+`src/Core` owns infrastructure. `src/Shared` contains small cross-cutting helpers. Each business capability remains inside one folder under `src/Modules`.
 
 Dependencies are resolved by the small application container through constructor type hints. This keeps the foundation testable without adding a framework or container package.
 
 ## Access control
 
 Routes declare `auth` and `permission:<code>` middleware. `AuthenticationService` validates the active user and idle timeout on every protected request. `AuthorizationService` is the single authorization decision point and reloads role/permission relationships from the database for each check, so changes never remain stale in a logged-in session. The `super_admin` bypass exists only in that service.
+
+State-changing POST controllers currently validate CSRF tokens explicitly. Login throttling and brute-force protection are required before public production deployment and remain a planned hardening item.
 
 ## Company profile
 
@@ -58,7 +60,7 @@ Subcontracts and SubcontractBoq are isolated modules for project execution agree
 
 `SubcontractCertificates` owns earned-work certification separately from contracts, BOQ definition, payments, and accounting. Approval locks the parent subcontract row, re-reads approved history, recalculates all DECIMAL quantities or percentages, validates contractual ceilings, and freezes audit and earned-value snapshots in one transaction. `getApprovedEarnedValue()` is the future payment integration boundary.
 
-Architectural invariant: cumulative subcontractor payments must never exceed cumulative approved earned work. A future payment Service must enforce this server-side while holding the relevant transaction locks; UI validation is not sufficient.
+Architectural invariant: cumulative subcontractor payments must never exceed cumulative approved earned work. `SubcontractPaymentService` enforces this server-side while holding the relevant transaction locks; UI validation is not sufficient.
 
 ## Subcontract payments
 

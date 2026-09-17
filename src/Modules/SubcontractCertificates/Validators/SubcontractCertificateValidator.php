@@ -30,7 +30,7 @@ final class SubcontractCertificateValidator
         if ($pricingMethod === 'lump_sum') {
             $percentage = $this->decimal($input['current_progress_percentage'] ?? null, 4);
             if ($percentage === null) $errors['current_progress_percentage'][] = 'نسبة التقدم الحالية مطلوبة وغير سالبة.';
-            elseif ((float) $percentage > 100) $errors['current_progress_percentage'][] = 'نسبة التقدم الحالية لا تتجاوز 100٪.';
+            elseif ($this->exceedsOneHundred($percentage)) $errors['current_progress_percentage'][] = 'نسبة التقدم الحالية لا تتجاوز 100٪.';
         } else {
             foreach (($input['quantities'] ?? []) as $itemId => $value) {
                 $id = filter_var($itemId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
@@ -77,5 +77,12 @@ final class SubcontractCertificateValidator
         [$whole, $fraction] = array_pad(explode('.', $value, 2), 2, '');
         if (strlen($fraction) > $scale) return null;
         return $whole . '.' . str_pad($fraction, $scale, '0');
+    }
+
+    private function exceedsOneHundred(string $value): bool
+    {
+        [$whole, $fraction] = array_pad(explode('.', $value, 2), 2, '');
+        $whole = ltrim($whole, '0') ?: '0';
+        return strlen($whole) > 3 || (strlen($whole) === 3 && strcmp($whole, '100') > 0) || ($whole === '100' && trim($fraction, '0') !== '');
     }
 }

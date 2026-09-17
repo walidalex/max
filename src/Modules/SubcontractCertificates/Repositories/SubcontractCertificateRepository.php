@@ -131,6 +131,12 @@ final class SubcontractCertificateRepository
         return (int) ($row['exceeds'] ?? 1) === 1;
     }
 
+    public function lumpProgressIsPositive(string $current): bool
+    {
+        $row = $this->one('SELECT ?>0 positive', [$current]);
+        return (int) ($row['positive'] ?? 0) === 1;
+    }
+
     public function approveBoq(int $id, int $userId, array $totals): void
     {
         $this->db->execute("UPDATE subcontract_progress_certificates SET previous_progress_percentage=NULL,current_progress_percentage=NULL,cumulative_progress_percentage=NULL,previous_earned_value=?,current_earned_value=?,cumulative_earned_value=?,status='approved',approved_at=NOW(),approved_by=? WHERE id=? AND status='draft'", [(string) $totals['previous_value'], (string) $totals['current_value'], (string) $totals['cumulative_value'], $userId, $id]);

@@ -100,7 +100,7 @@ final class SubcontractCertificateService
             }
 
             $current = (string) $certificate['current_progress_percentage'];
-            if ((float) $current <= 0) throw new BusinessRuleException('يجب أن تكون نسبة التقدم الحالية أكبر من صفر.');
+            if (!$this->certificates->lumpProgressIsPositive($current)) throw new BusinessRuleException('يجب أن تكون نسبة التقدم الحالية أكبر من صفر.');
             $previous = $this->certificates->approvedLumpProgress((int) $subcontract['id']);
             if ($this->certificates->lumpProgressExceeds($previous, $current)) throw new BusinessRuleException('نسبة التقدم التراكمية تتجاوز 100٪.');
             $this->certificates->approveLump($id, $userId, $previous, (string) $subcontract['contract_value']);

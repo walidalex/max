@@ -18,7 +18,11 @@ final class Environment
                 continue;
             }
             [$key, $value] = array_map('trim', explode('=', $line, 2));
-            if ($key === '' || array_key_exists($key, $_ENV)) {
+            $externalValue = getenv($key);
+            if ($key === '' || array_key_exists($key, $_ENV) || $externalValue !== false) {
+                if ($key !== '' && $externalValue !== false && !array_key_exists($key, $_ENV)) {
+                    $_ENV[$key] = $_SERVER[$key] = $externalValue;
+                }
                 continue;
             }
             $value = trim($value, "\"'");
