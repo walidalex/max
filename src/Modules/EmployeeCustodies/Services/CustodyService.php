@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
+
 namespace App\Modules\EmployeeCustodies\Services;
+
 use App\Core\Auth\Auth;
 use App\Core\Database\Database;
 use App\Core\Exceptions\BusinessRuleException;
@@ -9,15 +11,80 @@ use App\Modules\EmployeeCustodies\DTOs\CustodyData;
 use App\Modules\EmployeeCustodies\DTOs\SettlementData;
 use App\Modules\EmployeeCustodies\Repositories\CustodyRepository;
 use App\Shared\Numbering\NumberGeneratorService;
+
 final class CustodyService
 {
- public function __construct(private readonly CustodyRepository$repo,private readonly AccountingService$accounting,private readonly NumberGeneratorService$numbers,private readonly Database$db,private readonly Auth$auth){}
- public function all():array{return$this->repo->all();}public function references():array{return$this->repo->references();}public function find(int$id):array{return$this->repo->find($id)??throw new BusinessRuleException('العهدة غير موجودة.');}public function details(int$id):array{return['custody'=>$this->find($id),'settlements'=>$this->repo->settlements($id)];}
- public function save(CustodyData$d,?int$id=null):int{return$this->db->transaction(function()use($d,$id){if($id!==null){$old=$this->repo->find($id,true)??throw new BusinessRuleException('العهدة غير موجودة.');if($old['status']!=='draft')throw new BusinessRuleException('يمكن تعديل مسودة العهدة فقط.');}if($this->repo->employee($d->employeeId,true)===null)throw new BusinessRuleException('الموظف غير موجود.');if($d->projectId!==null&&$this->repo->project($d->projectId,true)===null)throw new BusinessRuleException('المشروع غير موجود.');$account=$this->repo->account($d->fundingAccountId,true);if($account===null||!(bool)$account['is_active']||!(bool)$account['is_postable'])throw new BusinessRuleException('حساب التمويل غير صالح.');if($id===null)return$this->repo->create($this->numbers->nextCustodyNumber((int)substr($d->issueDate,0,4)),$d,$this->user());$this->repo->update($id,$d);return$id;});}
+ public function __construct(private readonly CustodyRepository $repo,private readonly AccountingService $accounting,private readonly NumberGeneratorService $numbers,private readonly Database $db,private readonly Auth $auth){}
+ public function all():array{return $this->repo->all();}
+ public function references():array{return [...$this->repo->references(),'funding_accounts'=>$this->accounting->fundingAccounts()];}
+ public function find(int$id):array{return $this->repo->find($id)??throw new BusinessRuleException('العهدة غير موجودة.');}
+ public function details(int$id):array{return ['custody'=>$this->find($id),'settlements'=>$this->repo->settlements($id)];}
+
+ public function save(CustodyData$d,?int$id=null):int
+ {
+  return $this->db->transaction(function()use($d,$id){
+   if($id!==null){$old=$this->repo->find($id,true)??throw new BusinessRuleException('العهدة غير موجودة.');if($old['status']!=='draft')throw new BusinessRuleException('يمكن تعديل مسودة العهدة فقط.');}
+   if($this->repo->employee($d->employeeId,true)===null)throw new BusinessRuleException('الموظف غير موجود.');
+   if($d->projectId!==null&&$this->repo->project($d->projectId,true)===null)throw new BusinessRuleException('المشروع غير موجود.');
+   $funding=$this->accounting->mappedAccount($d->fundingType==='cash'?'cash_on_hand':'bank_account');
+   if((int)$funding['id']!==$d->fundingAccountId)throw new BusinessRuleException('حساب التمويل لا يطابق إعداد الترحيل لنوع التمويل.');
+   if($id===null)return $this->repo->create($this->numbers->nextCustodyNumber((int)substr($d->issueDate,0,4)),$d,$this->user());
+   $this->repo->update($id,$d);return $id;
+  });
+ }
+
  public function cancel(int$id):void{$this->db->transaction(function()use($id){$c=$this->repo->find($id,true)??throw new BusinessRuleException('العهدة غير موجودة.');if($c['status']!=='draft')throw new BusinessRuleException('يمكن إلغاء مسودة العهدة فقط.');$this->repo->cancel($id,$this->user());});}
- public function issue(int$id):void{$this->db->transaction(function()use($id){$c=$this->repo->find($id,true)??throw new BusinessRuleException('العهدة غير موجودة.');if($c['status']!=='draft')throw new BusinessRuleException('يمكن إصدار مسودة العهدة فقط.');if(!(bool)$c['employee_active'])throw new BusinessRuleException('الموظف غير نشط.');$funding=$this->accounting->mappedAccount($c['funding_type']==='cash'?'cash_on_hand':'bank_account');if((int)$funding['id']!==(int)$c['funding_account_id'])throw new BusinessRuleException('حساب التمويل لا يطابق إعداد الترحيل لنوع التمويل.');$custody=$this->accounting->mappedAccount('employee_custody');$lines=[$this->line((int)$custody['id'],'إصدار عهدة '.$c['custody_no'],(string)$c['amount'],'0.00',$c),$this->line((int)$funding['id'],'تمويل عهدة '.$c['custody_no'],'0.00',(string)$c['amount'],$c,null,2)];$journal=$this->accounting->createPostedAutomatic((string)$c['issue_date'],'إصدار عهدة موظف','employee_custody_issue',$id,(string)$c['custody_no'],$lines);$this->repo->issue($id,$journal,$this->user(),['employee_code'=>$c['employee_code'],'employee_name'=>$c['employee_name'],'project_code'=>$c['project_code'],'project_name'=>$c['project_name'],'account_code'=>$c['funding_account_code'],'account_name'=>$c['funding_account_name']]);});}
- public function settle(int$id,SettlementData$d):void{$this->db->transaction(function()use($id,$d){$c=$this->repo->find($id,true)??throw new BusinessRuleException('العهدة غير موجودة.');if(!in_array($c['status'],['issued','partially_settled'],true))throw new BusinessRuleException('حالة العهدة لا تسمح بالتسوية.');$capacity=$this->repo->settlementCapacity($id,$d->amount);if(!(bool)($capacity['fits']??false))throw new BusinessRuleException('مبلغ التسوية يتجاوز الرصيد المتبقي للعهدة.');$settlement=$this->repo->createSettlement($id,$d,(int)$capacity['next_order'],$this->user());$custodyAccount=$this->accounting->mappedAccount('employee_custody');$costId=null;if($d->type==='expense'){$master=$this->repo->costCode((int)$d->costCodeId,true)??throw new BusinessRuleException('كود التكلفة غير موجود.');if(!(bool)$master['is_active']||!(bool)$master['section_active'])throw new BusinessRuleException('كود التكلفة غير نشط.');$this->repo->project((int)$d->projectId,true)??throw new BusinessRuleException('المشروع غير موجود.');$expense=$this->accounting->mappedAccount($this->costMapping($master));if($this->repo->sourceCostExists($settlement))throw new BusinessRuleException('تم إنشاء تكلفة فعلية لهذه التسوية من قبل.');$costId=$this->repo->createActualCost($this->numbers->nextProjectActualCostCode((int)substr($d->date,0,4)),$settlement,$c,$d,$master,$this->user());$debit=$this->line((int)$expense['id'],$d->description,$d->amount,'0.00',$c,$d->costCodeId,1);}else{$return=$this->repo->account((int)$d->returnAccountId,true)??throw new BusinessRuleException('حساب رد النقدية غير موجود.');$cash=$this->accounting->mappedAccount('cash_on_hand');$bank=$this->accounting->mappedAccount('bank_account');if(!in_array((int)$return['id'],[(int)$cash['id'],(int)$bank['id']],true)||!(bool)$return['is_active']||!(bool)$return['is_postable'])throw new BusinessRuleException('رد النقدية متاح لحساب خزينة أو بنك مهيأ فقط.');$debit=$this->line((int)$return['id'],$d->description,$d->amount,'0.00',$c,null,1);}$credit=$this->line((int)$custodyAccount['id'],$d->description,'0.00',$d->amount,$c,$d->costCodeId,2);$journal=$this->accounting->createPostedAutomatic($d->date,'تسوية عهدة موظف','employee_custody_settlement',$settlement,$c['custody_no'],[$debit,$credit]);$this->repo->linkSettlement($settlement,$journal,$costId);$this->repo->refreshStatus($id);});}
- private function line(int$account,string$description,string$debit,string$credit,array$c,?int$cost=null,int$order=1):array{return['account_id'=>$account,'description'=>$description,'debit'=>$debit,'credit'=>$credit,'project_id'=>$c['project_id']===null?null:(int)$c['project_id'],'client_id'=>null,'vendor_id'=>null,'subcontract_id'=>null,'employee_id'=>(int)$c['employee_id'],'cost_code_id'=>$cost,'sort_order'=>$order];}
- private function costMapping(array$cost):string{$name=(string)$cost['name'];if(str_contains($name,'مشتريات'))return'material_cost';if(str_contains($name,'يوميات')||str_contains($name,'عمالة'))return'direct_labor_cost';if(str_contains($name,'معدات'))return'equipment_cost';if((string)$cost['section_code']==='19')return'site_expense';return'other_project_cost';}
- private function user():int{return$this->auth->id()??throw new BusinessRuleException('تعذر تحديد المستخدم الحالي.');}
+
+ public function issue(int$id):void
+ {
+  $this->db->transaction(function()use($id){
+   $c=$this->repo->find($id,true)??throw new BusinessRuleException('العهدة غير موجودة.');
+   if($c['status']!=='draft')throw new BusinessRuleException('يمكن إصدار مسودة العهدة فقط.');
+   if(!(bool)$c['employee_active'])throw new BusinessRuleException('الموظف غير نشط.');
+   $funding=$this->accounting->mappedAccount($c['funding_type']==='cash'?'cash_on_hand':'bank_account');
+   if((int)$funding['id']!==(int)$c['funding_account_id'])throw new BusinessRuleException('حساب التمويل لا يطابق إعداد الترحيل لنوع التمويل.');
+   $custody=$this->accounting->mappedAccount('employee_custody');
+   $lines=[$this->line((int)$custody['id'],'إصدار عهدة '.$c['custody_no'],(string)$c['amount'],'0.00',$c),$this->line((int)$funding['id'],'تمويل عهدة '.$c['custody_no'],'0.00',(string)$c['amount'],$c,null,2)];
+   $journal=$this->accounting->createPostedAutomatic((string)$c['issue_date'],'إصدار عهدة موظف','employee_custody_issue',$id,(string)$c['custody_no'],$lines);
+   $this->repo->issue($id,$journal,$this->user(),['employee_code'=>$c['employee_code'],'employee_name'=>$c['employee_name'],'project_code'=>$c['project_code'],'project_name'=>$c['project_name'],'account_code'=>$c['funding_account_code'],'account_name'=>$c['funding_account_name']]);
+  });
+ }
+
+ public function settle(int$id,SettlementData$d):void
+ {
+  $this->db->transaction(function()use($id,$d){
+   $c=$this->repo->find($id,true)??throw new BusinessRuleException('العهدة غير موجودة.');
+   if(!in_array($c['status'],['issued','partially_settled'],true))throw new BusinessRuleException('حالة العهدة لا تسمح بالتسوية.');
+   if($d->date<(string)$c['issue_date'])throw new BusinessRuleException('تاريخ التسوية لا يمكن أن يسبق تاريخ إصدار العهدة.');
+   $capacity=$this->repo->settlementCapacity($id,$d->amount);
+   if(!(bool)($capacity['fits']??false))throw new BusinessRuleException('مبلغ التسوية يتجاوز الرصيد المتبقي للعهدة.');
+   $custodyAccount=$this->accounting->mappedAccount('employee_custody');
+   $costId=null;$master=null;$expense=null;$return=null;
+   if($d->type==='expense'){
+    if($c['project_id']!==null&&(int)$c['project_id']!==(int)$d->projectId)throw new BusinessRuleException('يجب أن يكون مشروع التسوية مطابقًا لمشروع العهدة.');
+    $this->repo->project((int)$d->projectId,true)??throw new BusinessRuleException('المشروع غير موجود.');
+    $master=$this->repo->costCode((int)$d->costCodeId,true)??throw new BusinessRuleException('كود التكلفة غير موجود.');
+    if(!(bool)$master['is_active']||!(bool)$master['section_active'])throw new BusinessRuleException('كود التكلفة غير نشط.');
+    $expense=$this->accounting->costCodeAccount((int)$d->costCodeId,true);
+   }else{
+    $return=$this->repo->account((int)$d->returnAccountId,true)??throw new BusinessRuleException('حساب رد النقدية غير موجود.');
+    $cash=$this->accounting->mappedAccount('cash_on_hand');$bank=$this->accounting->mappedAccount('bank_account');
+    if(!in_array((int)$return['id'],[(int)$cash['id'],(int)$bank['id']],true)||!(bool)$return['is_active']||!(bool)$return['is_postable'])throw new BusinessRuleException('رد النقدية متاح لحساب خزينة أو بنك مهيأ فقط.');
+   }
+   $settlement=$this->repo->createSettlement($id,$d,(int)$capacity['next_order'],$this->user());
+   $context=$c;
+   if($d->type==='expense'){
+    $context['project_id']=$d->projectId;
+    if($this->repo->sourceCostExists($settlement))throw new BusinessRuleException('تم إنشاء تكلفة فعلية لهذه التسوية من قبل.');
+    $costId=$this->repo->createActualCost($this->numbers->nextProjectActualCostCode((int)substr($d->date,0,4)),$settlement,$c,$d,$master,$this->user());
+    $debit=$this->line((int)$expense['id'],$d->description,$d->amount,'0.00',$context,$d->costCodeId,1);
+   }else{$debit=$this->line((int)$return['id'],$d->description,$d->amount,'0.00',$context,null,1);}
+   $credit=$this->line((int)$custodyAccount['id'],$d->description,'0.00',$d->amount,$context,$d->type==='expense'?$d->costCodeId:null,2);
+   $journal=$this->accounting->createPostedAutomatic($d->date,'تسوية عهدة موظف','employee_custody_settlement',$settlement,$c['custody_no'],[$debit,$credit]);
+   $this->repo->linkSettlement($settlement,$journal,$costId);$this->repo->refreshStatus($id);
+  });
+ }
+
+ private function line(int$account,string$description,string$debit,string$credit,array$c,?int$cost=null,int$order=1):array{return ['account_id'=>$account,'description'=>$description,'debit'=>$debit,'credit'=>$credit,'project_id'=>$c['project_id']===null?null:(int)$c['project_id'],'client_id'=>null,'vendor_id'=>null,'subcontract_id'=>null,'employee_id'=>(int)$c['employee_id'],'cost_code_id'=>$cost,'sort_order'=>$order];}
+ private function user():int{return $this->auth->id()??throw new BusinessRuleException('تعذر تحديد المستخدم الحالي.');}
 }

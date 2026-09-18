@@ -238,6 +238,7 @@ $app->router()->post('/accounting/periods',[AccountingController::class,'createY
 $app->router()->post('/accounting/periods/{id}/status',[AccountingController::class,'periodStatus'],['auth','permission:accounting_periods.manage']);
 $app->router()->get('/accounting/setup',[AccountingController::class,'setup'],['auth','permission:accounting_setup.view']);
 $app->router()->post('/accounting/setup',[AccountingController::class,'saveSetup'],['auth','permission:accounting_setup.manage']);
+$app->router()->post('/accounting/setup/cost-codes',[AccountingController::class,'saveCostCodeMapping'],['auth','permission:accounting_setup.manage']);
 $app->router()->get('/employees',[EmployeeController::class,'index'],['auth','permission:employees.view']);
 $app->router()->post('/employees',[EmployeeController::class,'store'],['auth','permission:employees.manage']);
 $app->router()->post('/employees/{id}',[EmployeeController::class,'update'],['auth','permission:employees.manage']);
