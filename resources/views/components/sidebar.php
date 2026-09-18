@@ -51,6 +51,15 @@ $groups = [
     ['id'=>'subcontractors','label'=>'مقاولو الباطن','icon'=>'ti-building-factory-2','items'=>[
         ['label'=>'عقود مقاولي الباطن','href'=>'/subcontracts','icon'=>'ti-file-invoice','permission'=>'subcontracts.view','patterns'=>['/subcontracts','/subcontract-certificates','/subcontract-payments']],
     ]],
+    ['id'=>'accounting','label'=>'المحاسبة','icon'=>'ti-calculator','items'=>[
+        ['label'=>'دليل الحسابات','href'=>'/accounting/accounts','icon'=>'ti-list-tree','permission'=>'accounts.view','patterns'=>['/accounting/accounts']],
+        ['label'=>'القيود اليومية','href'=>'/accounting/journals','icon'=>'ti-book-2','permission'=>'journal_entries.view','patterns'=>['/accounting/journals']],
+        ['label'=>'ميزان المراجعة','href'=>'/accounting/trial-balance','icon'=>'ti-scale','permission'=>'trial_balance.view','patterns'=>['/accounting/trial-balance']],
+        ['label'=>'الفترات المحاسبية','href'=>'/accounting/periods','icon'=>'ti-calendar-month','permission'=>'accounting_periods.view','patterns'=>['/accounting/periods']],
+        ['label'=>'إعدادات الترحيل','href'=>'/accounting/setup','icon'=>'ti-adjustments','permission'=>'accounting_setup.view','patterns'=>['/accounting/setup']],
+        ['label'=>'عهد الموظفين','href'=>'/employee-custodies','icon'=>'ti-wallet','permission'=>'employee_custodies.view','patterns'=>['/employee-custodies']],
+        ['label'=>'الموظفون','href'=>'/employees','icon'=>'ti-users-group','permission'=>'employees.view','patterns'=>['/employees']],
+    ]],
     ['id'=>'settings','label'=>'الإعدادات','icon'=>'ti-settings','items'=>[
         ['label'=>'ملف الشركة','href'=>'/settings/company','icon'=>'ti-building','permission'=>'company_profile.view','patterns'=>['/settings/company']],
         ['label'=>'هيكل التكاليف','href'=>'/settings/cost-structure','icon'=>'ti-hierarchy-2','permission'=>'cost_structure.view','patterns'=>['/settings/cost-structure']],

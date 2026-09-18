@@ -1,0 +1,18 @@
+<?php
+declare(strict_types=1);
+use App\Core\Auth\Auth;
+use App\Core\Database\Database;
+use App\Core\Exceptions\BusinessRuleException;
+use App\Modules\Accounting\DTOs\JournalData;
+use App\Modules\Accounting\Services\AccountingService;
+/** @var Database $db */$db=$app->make(Database::class);/** @var AccountingService $service */$service=$app->make(AccountingService::class);/** @var Auth $auth */$auth=$app->make(Auth::class);
+$user=$db->execute('SELECT id,name,username FROM users WHERE is_active=1 LIMIT 1')->fetch_assoc();$auth->login($user);$year=2096;$journalIds=[];
+$cash=(int)$db->execute('SELECT id FROM accounts WHERE account_code=?',['111001'])->fetch_assoc()['id'];$capital=(int)$db->execute('SELECT id FROM accounts WHERE account_code=?',['310001'])->fetch_assoc()['id'];$control=(int)$db->execute('SELECT id FROM accounts WHERE account_code=?',['112001'])->fetch_assoc()['id'];
+$line=static fn(int$a,string$d,string$c,int$o):array=>['account_id'=>$a,'description'=>'Test','debit'=>$d,'credit'=>$c,'project_id'=>null,'client_id'=>null,'vendor_id'=>null,'subcontract_id'=>null,'employee_id'=>null,'cost_code_id'=>null,'sort_order'=>$o];
+try{$service->createYear($year);$balanced=new JournalData($year.'-01-05','Exact 0.10 + 0.20',null,[$line($cash,'0.10','0.00',1),$line($cash,'0.20','0.00',2),$line($capital,'0.00','0.30',3)]);$id=$service->saveJournal($balanced);$journalIds[]=$id;$service->postJournal($id);$entry=$service->journal($id);if($entry['journal']['status']!=='posted')throw new RuntimeException('Balanced journal was not posted.');try{$service->saveJournal($balanced,$id);throw new RuntimeException('Posted journal was mutable.');}catch(BusinessRuleException){}
+$unbalanced=$service->saveJournal(new JournalData($year.'-01-06','Unbalanced',null,[$line($cash,'1.00','0.00',1),$line($capital,'0.00','0.99',2)]));$journalIds[]=$unbalanced;try{$service->postJournal($unbalanced);throw new RuntimeException('Unbalanced journal posted.');}catch(BusinessRuleException){}
+$protected=$service->saveJournal(new JournalData($year.'-01-07','Control',null,[$line($control,'1.00','0.00',1),$line($capital,'0.00','1.00',2)]));$journalIds[]=$protected;try{$service->postJournal($protected);throw new RuntimeException('Control account accepted in manual journal.');}catch(BusinessRuleException){}
+$source=random_int(100000,999999);$auto=$service->createPostedAutomatic($year.'-01-08','Automatic source','accounting_test',$source,null,[$line($cash,'1.00','0.00',1),$line($capital,'0.00','1.00',2)]);$journalIds[]=$auto;try{$service->createPostedAutomatic($year.'-01-08','Duplicate','accounting_test',$source,null,[$line($cash,'1.00','0.00',1),$line($capital,'0.00','1.00',2)]);throw new RuntimeException('Duplicate source posting accepted.');}catch(BusinessRuleException){}
+$period=(int)$db->execute('SELECT id FROM accounting_periods WHERE fiscal_year=? AND period_no=2',[$year])->fetch_assoc()['id'];$service->setPeriodStatus($period,'closed');$closed=$service->saveJournal(new JournalData($year.'-02-01','Closed period',null,[$line($cash,'1.00','0.00',1),$line($capital,'0.00','1.00',2)]));$journalIds[]=$closed;try{$service->postJournal($closed);throw new RuntimeException('Closed-period journal posted.');}catch(BusinessRuleException){}
+$tb=$service->trialBalance($year.'-01-01',$year.'-12-31');if($tb['totals']['period_debit']!==$tb['totals']['period_credit'])throw new RuntimeException('Trial balance is not balanced.');
+}finally{$auth->logout();foreach($journalIds as$id){$db->execute('DELETE FROM journal_lines WHERE journal_entry_id=?',[$id]);$db->execute('DELETE FROM journal_entries WHERE id=?',[$id]);}$db->execute('DELETE FROM accounting_periods WHERE fiscal_year=?',[$year]);}

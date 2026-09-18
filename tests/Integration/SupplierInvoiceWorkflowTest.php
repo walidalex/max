@@ -94,6 +94,22 @@ try {
     if ((int) $effect['n'] !== 0) {
         throw new RuntimeException('Cancelled invoice had financial effect.');
     }
+
+    $largeLines = [
+        ['description' => 'Large A', 'cost_code_id' => (int) $code['id'], 'amount' => '6000000000000000.00', 'sort_order' => 1],
+        ['description' => 'Large B', 'cost_code_id' => (int) $code['id'], 'amount' => '6000000000000000.00', 'sort_order' => 2],
+    ];
+    try {
+        $service->save(new SupplierInvoiceData($vendorId, $projectId, null, 'INV-OVER-SAVE', '2026-09-03', null, null, null, $largeLines));
+        throw new RuntimeException('Supplier invoice total overflow was accepted on save.');
+    } catch (BusinessRuleException) {
+    }
+    $db->execute('INSERT INTO supplier_invoices(invoice_code,vendor_id,project_id,invoice_number,invoice_date,created_by) VALUES(?,?,?,?,?,?)',['SINV-OVER-'.$suffix,$vendorId,$projectId,'INV-OVER-APPROVE','2026-09-03',(int)$user['id']]);
+    $overflowId=(int)$db->connection()->insert_id;$invoiceIds[]=$overflowId;
+    foreach($largeLines as$line)$db->execute('INSERT INTO supplier_invoice_lines(supplier_invoice_id,description,cost_code_id,amount,sort_order) VALUES(?,?,?,?,?)',[$overflowId,$line['description'],$line['cost_code_id'],$line['amount'],$line['sort_order']]);
+    try{$service->approve($overflowId);throw new RuntimeException('Supplier invoice total overflow was accepted on approval.');}catch(BusinessRuleException){}
+    $overflowCosts=$db->execute('SELECT COUNT(*) n FROM project_actual_costs WHERE source_type=\'supplier_invoice\' AND source_id=?',[$overflowId])->fetch_assoc();
+    if((int)$overflowCosts['n']!==0)throw new RuntimeException('Rejected overflow approval created Project Actual Costs.');
 } finally {
     $auth->logout();
     foreach ($invoiceIds as $invoiceId) {

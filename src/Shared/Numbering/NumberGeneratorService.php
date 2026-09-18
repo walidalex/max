@@ -71,4 +71,19 @@ final class NumberGeneratorService
     {
         return sprintf('PO-%d-%04d', $year, $this->sequences->next('purchase_orders:' . $year));
     }
+
+    public function nextEmployeeCode(): string
+    {
+        return sprintf('EMP-%04d', $this->sequences->next('employees'));
+    }
+
+    public function nextJournalEntryNumber(int $year): string
+    {
+        return sprintf('JE-%d-%04d', $year, $this->sequences->next('journal_entries:' . $year));
+    }
+
+    public function nextCustodyNumber(int $year): string
+    {
+        return sprintf('CUST-%d-%04d', $year, $this->sequences->next('employee_custodies:' . $year));
+    }
 }

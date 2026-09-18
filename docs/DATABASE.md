@@ -8,6 +8,8 @@
 
 Run migrations with `php database/migrate.php` after creating the database and configuring `.env`.
 
+Accounting Phase 1 adds `accounts`, `accounting_periods`, `journal_entries`, `journal_lines`, `accounting_setup`, `employees`, `employee_custodies`, and `employee_custody_settlements`. Money columns use `DECIMAL(18,2)`. Journal source identity and custody effect links are unique so automatic financial effects remain idempotent.
+
 ## RBAC tables
 
 - `users`: required unique username, nullable unique email, password hash, active state, login timestamp.

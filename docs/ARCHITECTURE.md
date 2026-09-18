@@ -70,3 +70,6 @@ Client Progress Statements use the Client Contract row as the shared financial l
 ## Client receipts
 
 `ClientReceipts` separates posted cash from approved receivables. Posting freezes contract identity without changing statements, costs, progress, or contract value. Append-only allocations settle approved statements and derive outstanding/unallocated balances. Allocation shares the Client Contract lock with statement approval and detects over-allocation or cross-contract corruption before accepting new settlement rows.
+# Accounting foundation
+
+Accounting Phase 1 is isolated under `src/Modules/Accounting`, with employees and employee custodies in their own modules. Posted journal entries are immutable and source identity prevents duplicate automatic posting. Operational Project Actual Costs remain separate from the GL; only employee-custody expense settlements create both ledgers in one transaction.

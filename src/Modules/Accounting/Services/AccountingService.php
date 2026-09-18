@@ -1,0 +1,36 @@
+<?php
+declare(strict_types=1);
+namespace App\Modules\Accounting\Services;
+use App\Core\Auth\Auth;
+use App\Core\Database\Database;
+use App\Core\Exceptions\BusinessRuleException;
+use App\Modules\Accounting\DTOs\AccountData;
+use App\Modules\Accounting\DTOs\JournalData;
+use App\Modules\Accounting\Repositories\AccountingRepository;
+use App\Shared\Numbering\NumberGeneratorService;
+final class AccountingService
+{
+ private const SETUP_KEYS=['cash_on_hand','bank_account','ar_control','supplier_advance','subcontractor_advance','employee_custody','employee_advance','ap_control','subcontract_payable','client_advance','cost_plus_revenue','boq_revenue','lump_sum_revenue','variation_revenue','material_cost','subcontract_cost','direct_labor_cost','equipment_cost','site_expense','other_project_cost'];
+ public function __construct(private readonly AccountingRepository$repo,private readonly NumberGeneratorService$numbers,private readonly Database$db,private readonly Auth$auth){}
+ public function accounts():array{return$this->repo->accounts();}
+ public function account(int$id):array{return$this->repo->account($id)??throw new BusinessRuleException('الحساب غير موجود.');}
+ public function saveAccount(AccountData$d,?int$id=null):int{return$this->db->transaction(function()use($d,$id){$existing=$id===null?null:$this->repo->account($id,true);if($id!==null&&$existing===null)throw new BusinessRuleException('الحساب غير موجود.');if($d->parentId===null&&$d->isPostable)throw new BusinessRuleException('الحساب الجذري يجب أن يكون تجميعيًا وغير قابل للترحيل.');if($d->parentId!==null){if($d->parentId===$id)throw new BusinessRuleException('لا يمكن أن يكون الحساب أبًا لنفسه.');$parent=$this->repo->account($d->parentId,true)??throw new BusinessRuleException('الحساب الأب غير موجود.');if((bool)$parent['is_postable'])throw new BusinessRuleException('الحساب الأب يجب أن يكون حسابًا تجميعيًا غير قابل للترحيل.');if($parent['account_type']!==$d->type)throw new BusinessRuleException('نوع الحساب يجب أن يطابق نوع الحساب الأب.');}if($existing!==null&&(int)$existing['child_count']>0&&$d->isPostable)throw new BusinessRuleException('الحساب الذي يحتوي حسابات فرعية لا يمكن أن يكون قابلاً للترحيل.');return$this->repo->saveAccount($d,$id);});}
+ public function periods():array{return$this->repo->periods();}
+ public function createYear(int$year):void{if($year<2000||$year>2200)throw new BusinessRuleException('السنة المالية غير صالحة.');$this->db->transaction(function()use($year){if($this->repo->yearExists($year))throw new BusinessRuleException('تم إنشاء فترات هذه السنة من قبل.');for($month=1;$month<=12;$month++){$start=new \DateTimeImmutable(sprintf('%04d-%02d-01',$year,$month));$this->repo->insertPeriod($year,$month,$start->format('Y-m-d'),$start->modify('last day of this month')->format('Y-m-d'));}});}
+ public function setPeriodStatus(int$id,string$status):void{if(!in_array($status,['open','closed'],true))throw new BusinessRuleException('حالة الفترة غير صالحة.');$this->repo->setPeriodStatus($id,$status);}
+ public function journals():array{return$this->repo->journals();}
+ public function journal(int$id):array{$journal=$this->repo->journal($id)??throw new BusinessRuleException('القيد غير موجود.');return['journal'=>$journal,'lines'=>$this->repo->journalLines($id)];}
+ public function saveJournal(JournalData$d,?int$id=null):int{return$this->db->transaction(function()use($d,$id){if($id===null){$id=$this->repo->createJournal($this->numbers->nextJournalEntryNumber((int)substr($d->date,0,4)),$d,$this->user());}else{$journal=$this->repo->journal($id,true)??throw new BusinessRuleException('القيد غير موجود.');if($journal['status']!=='draft'||$journal['source_type']!==null)throw new BusinessRuleException('يمكن تعديل مسودة قيد يدوي فقط.');$this->repo->updateJournal($id,$d);}$this->repo->replaceLines($id,$d->lines);return$id;});}
+ public function postJournal(int$id):void{$this->db->transaction(function()use($id){$journal=$this->repo->journal($id,true)??throw new BusinessRuleException('القيد غير موجود.');if($journal['status']!=='draft')throw new BusinessRuleException('تم ترحيل القيد بالفعل ولا يمكن تعديله.');$this->assertOpenPeriod((string)$journal['journal_date']);$this->assertPostable($id,true);$this->repo->postJournal($id,$this->user());});}
+ /** @param list<array<string,mixed>> $lines */
+ public function createPostedAutomatic(string$date,string$description,string$sourceType,int$sourceId,?string$sourceReference,array$lines):int{if($this->repo->sourceExists($sourceType,$sourceId))throw new BusinessRuleException('تم إنشاء القيد المحاسبي لهذا المصدر من قبل.');$this->assertOpenPeriod($date);$data=new JournalData($date,$description,$sourceReference,$lines);$id=$this->repo->createJournal($this->numbers->nextJournalEntryNumber((int)substr($date,0,4)),$data,$this->user(),$sourceType,$sourceId,$sourceReference);$this->repo->replaceLines($id,$lines);$this->assertPostable($id,false);$this->repo->postJournal($id,$this->user());return$id;}
+ public function references():array{return$this->repo->references();}
+ public function setup():array{return$this->repo->setup();}
+ public function saveMapping(string$key,int$accountId):void{if(!in_array($key,self::SETUP_KEYS,true))throw new BusinessRuleException('مفتاح إعداد الترحيل غير صالح.');$account=$this->repo->account($accountId)??throw new BusinessRuleException('الحساب غير موجود.');if(!(bool)$account['is_active']||!(bool)$account['is_postable'])throw new BusinessRuleException('يجب اختيار حساب نشط وقابل للترحيل.');$this->repo->saveMapping($key,$accountId);}
+ public function mappedAccount(string$key,bool$lock=true):array{$account=$this->repo->mapping($key,$lock)??throw new BusinessRuleException('إعداد الترحيل المحاسبي غير مكتمل.');if(!(bool)$account['is_active']||!(bool)$account['is_postable'])throw new BusinessRuleException('حساب إعداد الترحيل غير نشط أو غير قابل للترحيل.');return$account;}
+ public function trialBalance(string$from,string$to):array{if(!$this->validDate($from)||!$this->validDate($to)||$to<$from)throw new BusinessRuleException('نطاق تاريخ ميزان المراجعة غير صالح.');return['rows'=>$this->repo->trialBalance($from,$to),'totals'=>$this->repo->trialBalanceDisplayTotals($from,$to)];}
+ private function assertOpenPeriod(string$date):void{if($this->repo->openPeriod($date,true)===null)throw new BusinessRuleException('لا توجد فترة محاسبية مفتوحة لتاريخ الترحيل.');}
+ private function assertPostable(int$id,bool$manual):void{$summary=$this->repo->journalSummary($id);if((int)($summary['line_count']??0)<2||(string)($summary['debit_total']??'0.00')==='0.00'||(string)$summary['debit_total']!==(string)$summary['credit_total'])throw new BusinessRuleException('القيد غير متوازن أو إجماليه صفر.');if(!(bool)($summary['accounts_valid']??false))throw new BusinessRuleException('كل حسابات القيد يجب أن تكون نشطة وقابلة للترحيل.');if($manual&&(bool)($summary['has_control']??false))throw new BusinessRuleException('لا يمكن استخدام حساب رقابي في قيد يدوي.');}
+ private function validDate(string$value):bool{$date=\DateTimeImmutable::createFromFormat('!Y-m-d',$value);return$date&&$date->format('Y-m-d')===$value;}
+ private function user():int{return$this->auth->id()??throw new BusinessRuleException('تعذر تحديد المستخدم الحالي.');}
+}
