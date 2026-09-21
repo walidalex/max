@@ -11,12 +11,14 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Http\Session;
 use App\Core\View\View;
+use App\Modules\AccessControl\Services\AuthorizationService;
 use App\Modules\Subcontracts\Services\SubcontractService;
 use App\Modules\Subcontracts\Validators\SubcontractValidator;
+use App\Modules\Vendors\Services\VendorService;
 
 final class SubcontractController
 {
-    public function __construct(private readonly View $view, private readonly Csrf $csrf, private readonly Session $session, private readonly SubcontractService $service, private readonly SubcontractValidator $validator) {}
+    public function __construct(private readonly View $view, private readonly Csrf $csrf, private readonly Session $session, private readonly SubcontractService $service, private readonly SubcontractValidator $validator, private readonly AuthorizationService $authorization, private readonly VendorService $vendors) {}
 
     public function index(Request $request): Response { return Response::html($this->view->render('modules/subcontracts/index', ['title' => 'عقود مقاولي الباطن', 'rows' => $this->service->all()])); }
     public function create(Request $request): Response { return $this->form(null); }
@@ -24,6 +26,7 @@ final class SubcontractController
     public function show(Request $request): Response { $subcontract = $this->service->find((int) $request->route('id')); return Response::html($this->view->render('modules/subcontracts/show', ['title' => 'تفاصيل عقد مقاول الباطن', 'subcontract' => $subcontract, 'transitions' => $this->service->transitions($subcontract['status'])])); }
     public function store(Request $request): Response { return $this->save($request, null); }
     public function update(Request $request): Response { return $this->save($request, (int) $request->route('id')); }
+    public function vendorsByWorkSection(Request $request): Response { return Response::json(['data' => $this->service->vendorsForWorkSection((int) $request->input('work_section_id'))]); }
 
     public function status(Request $request): Response
     {
@@ -36,7 +39,8 @@ final class SubcontractController
 
     private function form(?int $id): Response
     {
-        return Response::html($this->view->render('modules/subcontracts/form', ['title' => $id ? 'تعديل عقد مقاول باطن' : 'إضافة عقد مقاول باطن', 'subcontract' => $id ? $this->service->find($id) : null, ...$this->service->refs()]));
+        $canCreateVendor = $id === null && $this->authorization->can('vendors.create');
+        return Response::html($this->view->render('modules/subcontracts/form', ['title' => $id ? 'تعديل عقد مقاول باطن' : 'إضافة عقد مقاول باطن', 'subcontract' => $id ? $this->service->find($id) : null, 'canCreateVendor' => $canCreateVendor, 'workSections' => $canCreateVendor ? $this->vendors->workSections() : [], ...$this->service->refs()]));
     }
 
     private function save(Request $request, ?int $id): Response
@@ -44,7 +48,13 @@ final class SubcontractController
         if (!$this->csrf->isValid($request->input('_token'))) return Response::html('انتهت صلاحية الطلب.', 419);
         try { $id = $this->service->save($this->validator->validate($request->all()), $id); return Response::redirect('/subcontracts/' . $id); }
         catch (ValidationException|BusinessRuleException $exception) {
-            $message = $exception instanceof ValidationException ? (string) reset($exception->errors[array_key_first($exception->errors)]) : $exception->getMessage();
+            if ($exception instanceof ValidationException) {
+                $errors = $exception->errors;
+                $field = array_key_first($errors);
+                $message = (string) (($field !== null ? ($errors[$field][0] ?? null) : null) ?? 'يرجى مراجعة البيانات.');
+            } else {
+                $message = $exception->getMessage();
+            }
             $this->flash('error', 'تعذر الحفظ', $message);
             return Response::redirect($id ? '/subcontracts/' . $id . '/edit' : '/subcontracts/create');
         }

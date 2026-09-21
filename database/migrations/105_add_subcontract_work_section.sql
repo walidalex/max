@@ -1,0 +1,1 @@
+ALTER TABLE subcontracts ADD COLUMN work_section_id BIGINT UNSIGNED NULL AFTER project_id, ADD KEY idx_subcontracts_work_section(work_section_id), ADD CONSTRAINT fk_subcontracts_work_section FOREIGN KEY(work_section_id) REFERENCES work_sections(id) ON DELETE RESTRICT;

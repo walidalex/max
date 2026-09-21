@@ -1,0 +1,2 @@
+'use strict';
+document.addEventListener('DOMContentLoaded',()=>{const element=document.getElementById('subcontracts-table');if(!element||!window.AppDataTable)return;const table=window.AppDataTable.create(element,{serverSide:false,processing:false,order:[[6,'desc']]});[['subcontract-project-filter',1],['subcontract-section-filter',2],['subcontract-vendor-filter',3],['subcontract-status-filter',7]].forEach(([id,column])=>document.getElementById(id)?.addEventListener('change',event=>table.column(column).search(event.target.value,{exact:true}).draw()));});

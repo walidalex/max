@@ -11,7 +11,7 @@ final class VendorTableQueryValidator
     /** @param array<string, mixed> $input */
     public function validate(array $input): VendorTableQuery
     {
-        $columns = ['vendor_code', 'display_name', 'vendor_type', 'contact_number', 'primary_contact', 'is_active'];
+        $columns = ['vendor_code', 'display_name', 'vendor_type', 'contact_number', 'primary_contact', 'work_sections_count', 'is_active'];
         $columnIndex = max(0, (int) ($input['order'][0]['column'] ?? 0));
         $sortColumn = $columns[$columnIndex] ?? 'vendor_code';
         $direction = strtolower((string) ($input['order'][0]['dir'] ?? 'asc')) === 'desc' ? 'DESC' : 'ASC';

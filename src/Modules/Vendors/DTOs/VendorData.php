@@ -16,5 +16,7 @@ final readonly class VendorData
         public ?string $email,
         public ?string $address,
         public ?string $notes,
+        /** @var list<int> */
+        public array $workSectionIds,
     ) {}
 }
