@@ -1,10 +1,1 @@
-<?php
-
-declare(strict_types=1);
-
-namespace App\Modules\SubcontractPayments\DTOs;
-
-final readonly class SubcontractPaymentData
-{
-    public function __construct(public int $subcontractId, public string $paymentDate, public string $amount, public string $paymentMethod, public ?string $referenceNumber, public ?string $notes) {}
-}
+<?php declare(strict_types=1);namespace App\Modules\SubcontractPayments\DTOs;final readonly class SubcontractPaymentData{public function __construct(public int$subcontractId,public string$paymentDate,public string$amount,public string$paymentChannel,public ?string$bankPaymentMethod,public int$paymentAccountId,public ?string$referenceNumber,public ?string$chequeNumber,public ?string$chequeDate,public ?string$chequeDueDate,public ?string$notes){}public function legacyMethod():string{if($this->paymentChannel==='cash')return'cash';return in_array($this->bankPaymentMethod,['bank_transfer','cheque'],true)?$this->bankPaymentMethod:'other';}}

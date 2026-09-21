@@ -40,12 +40,12 @@ final class SubcontractCertificateRepository
 
     public function seedBoqItems(int $certificateId, int $boqId): void
     {
-        $this->db->execute("INSERT INTO subcontract_progress_items(certificate_id,subcontract_boq_item_id,description_snapshot,unit_name_snapshot,unit_symbol_snapshot,contract_quantity,unit_rate,sort_order) SELECT ?,i.id,i.description,i.unit_name,i.unit_symbol,i.quantity,i.unit_rate,(s.sort_order*100000+i.sort_order) FROM subcontract_boq_items i JOIN subcontract_boq_sections s ON s.id=i.subcontract_boq_section_id WHERE s.subcontract_boq_id=? AND i.quantity IS NOT NULL AND i.unit_rate IS NOT NULL ORDER BY s.sort_order,s.id,i.sort_order,i.id", [$certificateId, $boqId]);
+        $this->db->execute("INSERT INTO subcontract_progress_items(certificate_id,subcontract_boq_item_id,description_snapshot,pricing_type_snapshot,unit_name_snapshot,unit_symbol_snapshot,contract_quantity,unit_rate,lump_sum_amount_snapshot,previous_quantity,current_quantity,cumulative_quantity,previous_progress_percentage,current_progress_percentage,cumulative_progress_percentage,sort_order) SELECT ?,i.id,i.description,i.pricing_type,i.unit_name,i.unit_symbol,i.quantity,i.unit_rate,i.lump_sum_amount,IF(i.pricing_type='quantity',0,NULL),IF(i.pricing_type='quantity',0,NULL),IF(i.pricing_type='quantity',0,NULL),IF(i.pricing_type='lump_sum',0,NULL),IF(i.pricing_type='lump_sum',0,NULL),IF(i.pricing_type='lump_sum',0,NULL),(s.sort_order*100000+i.sort_order) FROM subcontract_boq_items i JOIN subcontract_boq_sections s ON s.id=i.subcontract_boq_section_id WHERE s.subcontract_boq_id=? ORDER BY s.sort_order,s.id,i.sort_order,i.id", [$certificateId, $boqId]);
     }
 
     public function boqSourceItems(int $boqId, int $subcontractId): array
     {
-        $result = $this->db->execute("SELECT i.id subcontract_boq_item_id,i.description description_snapshot,i.unit_name unit_name_snapshot,i.unit_symbol unit_symbol_snapshot,i.quantity contract_quantity,i.unit_rate,(s.sort_order*100000+i.sort_order) sort_order,COALESCE(h.previous_quantity,0) live_previous_quantity,COALESCE(h.previous_quantity,0) live_cumulative_quantity,0.0000 current_quantity,0.00 live_current_amount,ROUND(COALESCE(h.previous_quantity,0)*i.unit_rate,2) live_cumulative_amount FROM subcontract_boq_items i JOIN subcontract_boq_sections s ON s.id=i.subcontract_boq_section_id LEFT JOIN(SELECT pi.subcontract_boq_item_id,SUM(pi.current_quantity) previous_quantity FROM subcontract_progress_items pi JOIN subcontract_progress_certificates pc ON pc.id=pi.certificate_id WHERE pc.subcontract_id=? AND pc.status='approved' GROUP BY pi.subcontract_boq_item_id)h ON h.subcontract_boq_item_id=i.id WHERE s.subcontract_boq_id=? AND i.quantity IS NOT NULL AND i.unit_rate IS NOT NULL ORDER BY s.sort_order,s.id,i.sort_order,i.id", [$subcontractId, $boqId]);
+        $result = $this->db->execute("SELECT i.id subcontract_boq_item_id,i.description description_snapshot,i.pricing_type pricing_type_snapshot,i.unit_name unit_name_snapshot,i.unit_symbol unit_symbol_snapshot,i.quantity contract_quantity,i.unit_rate,i.lump_sum_amount lump_sum_amount_snapshot,(s.sort_order*100000+i.sort_order) sort_order,COALESCE(h.previous_measure,0) live_previous_quantity,COALESCE(h.previous_measure,0) live_cumulative_quantity,0.0000 current_quantity,0.00 live_current_amount,CASE WHEN i.pricing_type='lump_sum' THEN ROUND(COALESCE(h.previous_measure,0)*i.lump_sum_amount/100,2) ELSE ROUND(COALESCE(h.previous_measure,0)*i.unit_rate,2) END live_cumulative_amount FROM subcontract_boq_items i JOIN subcontract_boq_sections s ON s.id=i.subcontract_boq_section_id LEFT JOIN(SELECT pi.subcontract_boq_item_id,SUM(CASE WHEN pi.pricing_type_snapshot='lump_sum' THEN pi.current_progress_percentage ELSE pi.current_quantity END) previous_measure FROM subcontract_progress_items pi JOIN subcontract_progress_certificates pc ON pc.id=pi.certificate_id WHERE pc.subcontract_id=? AND pc.status='approved' GROUP BY pi.subcontract_boq_item_id)h ON h.subcontract_boq_item_id=i.id WHERE s.subcontract_boq_id=? ORDER BY s.sort_order,s.id,i.sort_order,i.id", [$subcontractId, $boqId]);
         return $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
@@ -58,7 +58,7 @@ final class SubcontractCertificateRepository
     public function updateQuantities(int $certificateId, array $quantities): void
     {
         foreach ($quantities as $boqItemId => $quantity) {
-            $this->db->execute('UPDATE subcontract_progress_items SET current_quantity=? WHERE certificate_id=? AND subcontract_boq_item_id=?', [$quantity, $certificateId, $boqItemId]);
+            $this->db->execute("UPDATE subcontract_progress_items SET current_quantity=IF(pricing_type_snapshot='quantity',?,NULL),current_progress_percentage=IF(pricing_type_snapshot='lump_sum',?,NULL) WHERE certificate_id=? AND subcontract_boq_item_id=?", [$quantity, $quantity, $certificateId, $boqItemId]);
         }
     }
 
@@ -78,14 +78,14 @@ final class SubcontractCertificateRepository
 
     public function items(int $certificateId): array
     {
-        $result = $this->db->execute("SELECT i.*,COALESCE(h.previous_quantity,0) live_previous_quantity,COALESCE(h.previous_quantity,0)+i.current_quantity live_cumulative_quantity,ROUND(i.current_quantity*i.unit_rate,2) live_current_amount,ROUND((COALESCE(h.previous_quantity,0)+i.current_quantity)*i.unit_rate,2) live_cumulative_amount FROM subcontract_progress_items i LEFT JOIN(SELECT pi.subcontract_boq_item_id,SUM(pi.current_quantity) previous_quantity FROM subcontract_progress_items pi JOIN subcontract_progress_certificates pc ON pc.id=pi.certificate_id WHERE pc.status='approved' AND pc.id<>? GROUP BY pi.subcontract_boq_item_id)h ON h.subcontract_boq_item_id=i.subcontract_boq_item_id WHERE i.certificate_id=? ORDER BY i.sort_order,i.id", [$certificateId, $certificateId]);
+        $result = $this->db->execute("SELECT i.*,COALESCE(h.previous_measure,0) live_previous_quantity,COALESCE(h.previous_measure,0)+CASE WHEN i.pricing_type_snapshot='lump_sum' THEN i.current_progress_percentage ELSE i.current_quantity END live_cumulative_quantity,CASE WHEN i.pricing_type_snapshot='lump_sum' THEN ROUND(i.current_progress_percentage*i.lump_sum_amount_snapshot/100,2) ELSE ROUND(i.current_quantity*i.unit_rate,2) END live_current_amount,CASE WHEN i.pricing_type_snapshot='lump_sum' THEN ROUND((COALESCE(h.previous_measure,0)+i.current_progress_percentage)*i.lump_sum_amount_snapshot/100,2) ELSE ROUND((COALESCE(h.previous_measure,0)+i.current_quantity)*i.unit_rate,2) END live_cumulative_amount FROM subcontract_progress_items i LEFT JOIN(SELECT pi.subcontract_boq_item_id,SUM(CASE WHEN pi.pricing_type_snapshot='lump_sum' THEN pi.current_progress_percentage ELSE pi.current_quantity END) previous_measure FROM subcontract_progress_items pi JOIN subcontract_progress_certificates pc ON pc.id=pi.certificate_id WHERE pc.status='approved' AND pc.id<>? GROUP BY pi.subcontract_boq_item_id)h ON h.subcontract_boq_item_id=i.subcontract_boq_item_id WHERE i.certificate_id=? ORDER BY i.sort_order,i.id", [$certificateId, $certificateId]);
         return $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
     /** @return array<int, string> */
     public function approvedQuantities(int $subcontractId): array
     {
-        $result = $this->db->execute("SELECT pi.subcontract_boq_item_id,SUM(pi.current_quantity) quantity FROM subcontract_progress_items pi JOIN subcontract_progress_certificates c ON c.id=pi.certificate_id WHERE c.subcontract_id=? AND c.status='approved' GROUP BY pi.subcontract_boq_item_id", [$subcontractId]);
+        $result = $this->db->execute("SELECT pi.subcontract_boq_item_id,SUM(CASE WHEN pi.pricing_type_snapshot='lump_sum' THEN pi.current_progress_percentage ELSE pi.current_quantity END) quantity FROM subcontract_progress_items pi JOIN subcontract_progress_certificates c ON c.id=pi.certificate_id WHERE c.subcontract_id=? AND c.status='approved' GROUP BY pi.subcontract_boq_item_id", [$subcontractId]);
         $rows = $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
         $map = [];
         foreach ($rows as $row) $map[(int) $row['subcontract_boq_item_id']] = (string) $row['quantity'];
@@ -94,24 +94,24 @@ final class SubcontractCertificateRepository
 
     public function finalizeBoqItem(int $certificateId, int $boqItemId, string $previous): void
     {
-        $this->db->execute('UPDATE subcontract_progress_items SET previous_quantity=?,cumulative_quantity=?+current_quantity,current_amount=ROUND(current_quantity*unit_rate,2),cumulative_amount=ROUND((?+current_quantity)*unit_rate,2) WHERE certificate_id=? AND subcontract_boq_item_id=?', [$previous, $previous, $previous, $certificateId, $boqItemId]);
+        $this->db->execute("UPDATE subcontract_progress_items SET previous_quantity=IF(pricing_type_snapshot='quantity',?,NULL),cumulative_quantity=IF(pricing_type_snapshot='quantity',?+current_quantity,NULL),previous_progress_percentage=IF(pricing_type_snapshot='lump_sum',?,NULL),cumulative_progress_percentage=IF(pricing_type_snapshot='lump_sum',?+current_progress_percentage,NULL),current_amount=CASE WHEN pricing_type_snapshot='lump_sum' THEN ROUND(current_progress_percentage*lump_sum_amount_snapshot/100,2) ELSE ROUND(current_quantity*unit_rate,2) END,cumulative_amount=CASE WHEN pricing_type_snapshot='lump_sum' THEN ROUND((?+current_progress_percentage)*lump_sum_amount_snapshot/100,2) ELSE ROUND((?+current_quantity)*unit_rate,2) END WHERE certificate_id=? AND subcontract_boq_item_id=?", [$previous,$previous,$previous,$previous,$previous,$previous,$certificateId,$boqItemId]);
     }
 
     public function invalidBoqItemCount(int $certificateId): int
     {
-        $row = $this->one('SELECT COUNT(*) total FROM subcontract_progress_items WHERE certificate_id=? AND cumulative_quantity>contract_quantity', [$certificateId]);
+        $row = $this->one("SELECT COUNT(*) total FROM subcontract_progress_items WHERE certificate_id=? AND ((pricing_type_snapshot='quantity' AND cumulative_quantity>contract_quantity) OR (pricing_type_snapshot='lump_sum' AND cumulative_progress_percentage>100))", [$certificateId]);
         return (int) ($row['total'] ?? 0);
     }
 
     public function positiveBoqItemCount(int $certificateId): int
     {
-        $row = $this->one('SELECT COUNT(*) total FROM subcontract_progress_items WHERE certificate_id=? AND current_quantity>0', [$certificateId]);
+        $row = $this->one("SELECT COUNT(*) total FROM subcontract_progress_items WHERE certificate_id=? AND ((pricing_type_snapshot='quantity' AND current_quantity>0) OR (pricing_type_snapshot='lump_sum' AND current_progress_percentage>0))", [$certificateId]);
         return (int) ($row['total'] ?? 0);
     }
 
     public function boqTotals(int $certificateId): array
     {
-        return $this->one('SELECT COALESCE(SUM(previous_quantity*unit_rate),0) previous_value,COALESCE(SUM(current_amount),0) current_value,COALESCE(SUM(cumulative_amount),0) cumulative_value FROM subcontract_progress_items WHERE certificate_id=?', [$certificateId]) ?? ['previous_value' => '0.00', 'current_value' => '0.00', 'cumulative_value' => '0.00'];
+        return $this->one('SELECT COALESCE(SUM(cumulative_amount-current_amount),0) previous_value,COALESCE(SUM(current_amount),0) current_value,COALESCE(SUM(cumulative_amount),0) cumulative_value FROM subcontract_progress_items WHERE certificate_id=?', [$certificateId]) ?? ['previous_value' => '0.00', 'current_value' => '0.00', 'cumulative_value' => '0.00'];
     }
 
     public function latestApprovedSequence(int $subcontractId): ?array

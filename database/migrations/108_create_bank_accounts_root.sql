@@ -1,0 +1,1 @@
+INSERT INTO accounts(account_code,name_ar,name_en,parent_id,account_type,normal_balance,is_postable,is_control,is_active) SELECT '111200','الحسابات البنكية','Bank Accounts',id,'asset','debit',0,0,1 FROM accounts WHERE account_code='111000' ON DUPLICATE KEY UPDATE account_code=VALUES(account_code)
