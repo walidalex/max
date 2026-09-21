@@ -18,5 +18,17 @@ final class SubcontractRepository
     public function boq(int $id): ?array { $r=$this->db->execute('SELECT status FROM subcontract_boqs WHERE subcontract_id=? LIMIT 1',[$id]); $x=$r instanceof \mysqli_result?$r->fetch_assoc():null; return is_array($x)?$x:null; }
     public function refs(): array { foreach(['projects'=>'SELECT id,project_code,name FROM projects ORDER BY project_code','work_sections'=>'SELECT id,section_code,name FROM work_sections WHERE is_active=1 ORDER BY sort_order,section_code','vendors'=>"SELECT v.id,v.vendor_code,v.name,v.is_active FROM vendors v WHERE v.vendor_type IN('subcontractor','both') ORDER BY v.name"] as $key=>$sql){$r=$this->db->execute($sql);$references[$key]=$r instanceof \mysqli_result?$r->fetch_all(MYSQLI_ASSOC):[];} return $references; }
     public function vendorsForWorkSection(int $sectionId): array { $r=$this->db->execute("SELECT v.id,v.vendor_code,v.name,v.is_active FROM vendors v JOIN vendor_work_sections vws ON vws.vendor_id=v.id WHERE vws.work_section_id=? AND v.is_active=1 AND v.vendor_type IN('subcontractor','both') ORDER BY v.name",[$sectionId]); return $r instanceof \mysqli_result?$r->fetch_all(MYSQLI_ASSOC):[]; }
+    public function workspaceStats(int $id): array
+    {
+        $sql = "SELECT b.id boq_id,b.status boq_status,
+            (SELECT COUNT(*) FROM subcontract_progress_certificates c WHERE c.subcontract_id=s.id) certificate_count,
+            (SELECT COUNT(*) FROM subcontract_progress_certificates c WHERE c.subcontract_id=s.id AND c.status='draft') draft_certificate_count,
+            (SELECT COUNT(*) FROM subcontract_payments p WHERE p.subcontract_id=s.id) payment_count,
+            (SELECT COUNT(*) FROM subcontract_payments p WHERE p.subcontract_id=s.id AND p.status='draft') draft_payment_count
+            FROM subcontracts s LEFT JOIN subcontract_boqs b ON b.subcontract_id=s.id WHERE s.id=? LIMIT 1";
+        $result = $this->db->execute($sql, [$id]);
+        $row = $result instanceof \mysqli_result ? $result->fetch_assoc() : null;
+        return is_array($row) ? $row : [];
+    }
     public function all(): array { $r=$this->db->execute('SELECT s.id,s.subcontract_code,s.subcontract_number,s.project_id,s.work_section_id,s.vendor_id,p.name project_name,v.name vendor_name,ws.name work_section_name,s.title,s.contract_value,s.contract_date,s.status FROM subcontracts s JOIN projects p ON p.id=s.project_id JOIN vendors v ON v.id=s.vendor_id LEFT JOIN work_sections ws ON ws.id=s.work_section_id ORDER BY s.id DESC'); return $r instanceof \mysqli_result?$r->fetch_all(MYSQLI_ASSOC):[]; }
 }

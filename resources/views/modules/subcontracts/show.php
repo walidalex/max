@@ -1,12 +1,45 @@
-<h2 class="page-title mb-4"><?= e($subcontract['subcontract_code'] . ' - ' . $subcontract['title']) ?></h2>
-<div class="card"><div class="card-body">
-<p>المشروع: <?= e($subcontract['project_name']) ?></p>
-<p>المقاول: <?= e($subcontract['vendor_name']) ?></p>
-<p>القيمة: <?= e($subcontract['contract_value'] ?? '—') ?></p>
-<div class="d-flex flex-wrap gap-2">
-<a class="btn" href="/subcontracts/<?= (int) $subcontract['id'] ?>/edit">تعديل</a>
-<a class="btn btn-primary" href="/subcontracts/<?= (int) $subcontract['id'] ?>/boq">BOQ / نطاق الأعمال</a>
-<a class="btn btn-primary" href="/subcontracts/<?= (int) $subcontract['id'] ?>/certificates">مستخلصات الأعمال</a>
-<a class="btn btn-success" href="/subcontracts/<?= (int) $subcontract['id'] ?>/payments">دفعات المقاول</a>
-<?php foreach ($transitions as $status): ?><form class="d-inline js-confirm-form" method="post" action="/subcontracts/<?= (int) $subcontract['id'] ?>/status"><input type="hidden" name="_token" value="<?= e($csrfToken) ?>"><input type="hidden" name="status" value="<?= e($status) ?>"><button class="btn"><?= e($status) ?></button></form><?php endforeach; ?>
-</div></div></div>
+<?php
+$id=(int)$subcontract['id'];
+$statuses=['draft'=>'مسودة','active'=>'نشط','suspended'=>'معلق','completed'=>'مكتمل','cancelled'=>'ملغي'];
+$statusColors=['draft'=>'yellow','active'=>'green','suspended'=>'orange','completed'=>'blue','cancelled'=>'red'];
+$transitionLabels=['active'=>'تفعيل العقد','suspended'=>'تعليق العقد','completed'=>'إكمال العقد','cancelled'=>'إلغاء العقد'];
+$boqStatus=$stats['boq_status']??null;
+$canCreateCertificate=$permissions['certificate_create']&&in_array($subcontract['status'],['active','suspended'],true)&&$boqStatus==='approved';
+$canCreatePayment=$permissions['payment_create']&&in_array($subcontract['status'],['active','suspended','completed'],true)&&(string)$summary['available_payment_amount']!=='0.00';
+?>
+<div class="page-header mb-4"><div class="row align-items-center g-3"><div class="col"><div class="page-pretitle"><a href="/subcontracts">عقود مقاولي الباطن</a> / <?=e($subcontract['subcontract_code'])?></div><div class="d-flex align-items-center gap-2"><h2 class="page-title"><?=e($subcontract['title'])?></h2><span class="badge bg-<?=e($statusColors[$subcontract['status']]??'secondary')?>-lt"><?=e($statuses[$subcontract['status']]??$subcontract['status'])?></span></div><div class="text-secondary mt-1"><?=e($subcontract['project_name'])?> · <?=e($subcontract['vendor_name'])?><?php if(!empty($subcontract['work_section_name'])):?> · <?=e($subcontract['work_section_name'])?><?php endif;?></div></div>
+<div class="col-auto d-flex flex-wrap gap-2"><?php if($permissions['edit']):?><a class="btn" href="/subcontracts/<?=$id?>/edit"><i class="ti ti-edit ms-2"></i>تعديل</a><?php endif;?>
+<?php if($canCreateCertificate):?><a class="btn btn-primary" href="/subcontracts/<?=$id?>/certificates/create"><i class="ti ti-file-plus ms-2"></i>مستخلص جديد</a><?php endif;?>
+<?php if($canCreatePayment):?><a class="btn btn-success" href="/subcontracts/<?=$id?>/payments/create"><i class="ti ti-cash ms-2"></i>دفعة جديدة</a><?php endif;?></div></div></div>
+
+<?php if($subcontract['status']==='draft'&&$boqStatus===null):?>
+<div class="alert alert-info d-flex align-items-center"><i class="ti ti-info-circle fs-2 ms-3"></i><div><strong>الخطوة التالية: ابدأ جدول الأعمال</strong><div>أضف نطاق وبنود العقد، ثم اعتمد الجدول قبل تفعيل العقد.</div></div><?php if($permissions['boq_manage']):?><a class="btn btn-primary me-auto" href="/subcontracts/<?=$id?>/boq">بدء جدول الأعمال</a><?php endif;?></div>
+<?php elseif($subcontract['status']==='draft'&&$boqStatus==='draft'):?>
+<div class="alert alert-warning d-flex align-items-center"><i class="ti ti-list-check fs-2 ms-3"></i><div><strong>الخطوة التالية: أكمل واعتمد جدول الأعمال</strong><div>لن يمكن تفعيل العقد قبل اعتماد بنوده وقيمته.</div></div><?php if($permissions['boq_view']):?><a class="btn btn-warning me-auto" href="/subcontracts/<?=$id?>/boq">فتح جدول الأعمال</a><?php endif;?></div>
+<?php elseif($subcontract['status']==='draft'&&$boqStatus==='approved'):?>
+<div class="alert alert-success d-flex align-items-center"><i class="ti ti-circle-check fs-2 ms-3"></i><div><strong>العقد جاهز للتفعيل</strong><div>تم اعتماد جدول الأعمال وتثبيت قيمة العقد.</div></div></div>
+<?php elseif(in_array($subcontract['status'],['active','suspended'],true)):?>
+<div class="alert alert-info"><i class="ti ti-progress-check ms-2"></i><strong>العقد في مرحلة التنفيذ:</strong> أنشئ المستخلصات من الكميات المنفذة، ثم سجّل الدفعات من القيمة المعتمدة فقط.</div>
+<?php elseif($subcontract['status']==='completed'&&(string)$summary['available_payment_amount']!=='0.00'):?>
+<div class="alert alert-warning"><i class="ti ti-alert-triangle ms-2"></i>العقد مكتمل، لكن ما زال هناك مبلغ مستحق للمقاول قدره <strong><?=decimal_format((string)$summary['available_payment_amount'])?></strong>.</div>
+<?php endif;?>
+
+<div class="row row-cards mb-4">
+<?php foreach([['contract_value','قيمة العقد','ti-file-invoice','primary'],['approved_earned_value','الأعمال المعتمدة','ti-progress-check','success'],['posted_payments_total','المدفوع','ti-cash','blue'],['available_payment_amount','المتاح للدفع','ti-wallet','orange']]as[$key,$label,$icon,$color]):?>
+<div class="col-sm-6 col-xl-3"><div class="card card-sm h-100"><div class="card-body"><div class="d-flex align-items-center"><span class="avatar bg-<?=$color?>-lt ms-3"><i class="ti <?=$icon?>"></i></span><div><div class="text-secondary"><?=$label?></div><div class="h2 mb-0"><?=decimal_format((string)$summary[$key])?></div></div></div></div></div></div>
+<?php endforeach;?>
+</div>
+
+<div class="card mb-4"><div class="card-body py-3"><div class="row align-items-center g-3"><div class="col-md"><div class="d-flex align-items-center gap-3"><div class="h1 mb-0 text-primary"><?=e((string)$summary['approved_progress_percentage'])?>%</div><div class="flex-fill"><div class="d-flex justify-content-between mb-1"><span>نسبة الإنجاز المعتمدة</span><span class="text-secondary">من المستخلصات المعتمدة</span></div><div class="progress"><div class="progress-bar" style="width:min(100%, <?=e((string)$summary['approved_progress_percentage'])?>%)"></div></div></div></div></div></div></div>
+
+<div class="card mb-4"><div class="card-header"><h3 class="card-title">مساحة عمل العقد</h3></div><div class="list-group list-group-flush">
+<?php if($permissions['boq_view']):?><a class="list-group-item list-group-item-action py-3" href="/subcontracts/<?=$id?>/boq"><div class="row align-items-center"><div class="col-auto"><span class="avatar bg-primary-lt"><i class="ti ti-list-details"></i></span></div><div class="col"><div class="fw-bold">جدول الأعمال ونطاق العقد</div><div class="text-secondary"><?=$boqStatus==='approved'?'معتمد وثابت':($boqStatus==='draft'?'مسودة تحتاج إلى استكمال':'لم يبدأ بعد')?></div></div><div class="col-auto"><span class="badge bg-blue-lt"><?=e($boqStatus==='approved'?'معتمد':($boqStatus==='draft'?'مسودة':'ابدأ'))?></span><i class="ti ti-chevron-left me-2"></i></div></div></a><?php endif;?>
+<?php if($permissions['certificate_view']):?><a class="list-group-item list-group-item-action py-3" href="/subcontracts/<?=$id?>/certificates"><div class="row align-items-center"><div class="col-auto"><span class="avatar bg-success-lt"><i class="ti ti-file-description"></i></span></div><div class="col"><div class="fw-bold">مستخلصات الأعمال</div><div class="text-secondary">تسجيل واعتماد الأعمال المنفذة ومتابعة القيمة المكتسبة</div></div><div class="col-auto"><span class="badge bg-green-lt"><?=(int)($stats['certificate_count']??0)?> مستخلص</span><?php if((int)($stats['draft_certificate_count']??0)>0):?><span class="badge bg-yellow-lt"><?=(int)$stats['draft_certificate_count']?> مسودة</span><?php endif;?><i class="ti ti-chevron-left me-2"></i></div></div></a><?php endif;?>
+<?php if($permissions['payment_view']):?><a class="list-group-item list-group-item-action py-3" href="/subcontracts/<?=$id?>/payments"><div class="row align-items-center"><div class="col-auto"><span class="avatar bg-orange-lt"><i class="ti ti-cash-banknote"></i></span></div><div class="col"><div class="fw-bold">دفعات المقاول</div><div class="text-secondary">تسجيل الدفعات ومتابعة المبالغ المرحلة والمتاحة</div></div><div class="col-auto"><span class="badge bg-blue-lt"><?=(int)($stats['payment_count']??0)?> دفعة</span><?php if((int)($stats['draft_payment_count']??0)>0):?><span class="badge bg-yellow-lt"><?=(int)$stats['draft_payment_count']?> مسودة</span><?php endif;?><i class="ti ti-chevron-left me-2"></i></div></div></a><?php endif;?>
+</div></div>
+
+<div class="row g-4"><div class="col-lg-8"><div class="card h-100"><div class="card-header"><h3 class="card-title">بيانات العقد</h3></div><div class="card-body"><div class="row g-4">
+<?php foreach([['المشروع',$subcontract['project_name']],['مقاول الباطن',$subcontract['vendor_name']],['مجال العمل',$subcontract['work_section_name']??'—'],['رقم العقد التجاري',$subcontract['subcontract_number']??'—'],['تاريخ العقد',$subcontract['contract_date']],['تاريخ البدء',$subcontract['start_date']??'—'],['النهاية المتوقعة',$subcontract['expected_end_date']??'—']]as[$label,$value]):?><div class="col-md-6"><div class="text-secondary small mb-1"><?=$label?></div><div class="fw-medium"><?=e((string)$value)?></div></div><?php endforeach;?>
+<?php if(!empty($subcontract['description'])):?><div class="col-12"><div class="text-secondary small mb-1">وصف نطاق الأعمال</div><div><?=nl2br(e($subcontract['description']))?></div></div><?php endif;?>
+</div></div></div></div>
+<div class="col-lg-4"><div class="card h-100"><div class="card-header"><h3 class="card-title">إدارة حالة العقد</h3></div><div class="card-body"><p class="text-secondary">تظهر الإجراءات المسموحة فقط حسب الحالة الحالية.</p><?php if($permissions['change_status']&&$transitions):?><div class="d-grid gap-2"><?php foreach($transitions as$status):?><form class="js-confirm-form" method="post" action="/subcontracts/<?=$id?>/status"><input type="hidden" name="_token" value="<?=e($csrfToken)?>"><input type="hidden" name="status" value="<?=e($status)?>"><button class="btn <?= $status==='active'?'btn-success':($status==='cancelled'?'btn-outline-danger':'btn-outline-primary')?> w-100" type="submit"><?=e($transitionLabels[$status]??$status)?></button></form><?php endforeach;?></div><?php else:?><div class="alert alert-secondary mb-0">لا توجد إجراءات حالة متاحة.</div><?php endif;?></div></div></div></div>
