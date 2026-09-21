@@ -16,6 +16,6 @@ final class BoqItemValidator
         return new BoqItemData((int)$section,$cost,$this->n($i['item_code']??null),trim((string)$i['description']),$type,$unit,$q,$rate,$lump,(int)$sort,$this->n($i['notes']??null));
     }
     private function id(mixed $v,bool $optional):?int{if($optional&&trim((string)$v)==='')return null;$x=filter_var($v,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);return$x===false?null:$x;}
-    private function decimal(mixed $v,int $scale):?string{$v=trim((string)$v);if($v===''||!preg_match('/^\d+(?:\.\d+)?$/',$v))return null;return number_format((float)$v,$scale,'.','');}
+    private function decimal(mixed $v,int $scale):?string{$v=trim((string)$v);if($v===''||!preg_match('/^\d+(?:\.\d+)?$/',$v))return null;[$integer,$fraction]=array_pad(explode('.',$v,2),2,'');$integer=ltrim($integer,'0')?:'0';return $integer.'.'.str_pad(substr($fraction,0,$scale),$scale,'0');}
     private function n(mixed $v):?string{$v=trim((string)$v);return$v===''?null:$v;}
 }
