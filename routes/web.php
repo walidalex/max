@@ -138,6 +138,7 @@ $app->router()->post('/contracts/{contract_id}/boq/approve',[ContractBoqControll
 $app->router()->get('/subcontracts',[SubcontractController::class,'index'],['auth','permission:subcontracts.view']);
 $app->router()->get('/subcontracts/create',[SubcontractController::class,'create'],['auth','permission:subcontracts.create']);
 $app->router()->post('/subcontracts',[SubcontractController::class,'store'],['auth','permission:subcontracts.create']);
+$app->router()->get('/api/subcontracts/vendors-by-work-section',[SubcontractController::class,'vendorsByWorkSection'],['auth','permission:subcontracts.create']);
 $app->router()->get('/subcontracts/{id}',[SubcontractController::class,'show'],['auth','permission:subcontracts.view']);
 $app->router()->get('/subcontracts/{id}/edit',[SubcontractController::class,'edit'],['auth','permission:subcontracts.edit']);
 $app->router()->post('/subcontracts/{id}/edit',[SubcontractController::class,'update'],['auth','permission:subcontracts.edit']);

@@ -39,6 +39,24 @@ final class VendorValidator
         if ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $errors['email'][] = 'البريد الإلكتروني غير صالح.';
         }
+        $rawWorkSectionIds = $input['work_section_ids'] ?? [];
+        if (!is_array($rawWorkSectionIds)) {
+            $errors['work_section_ids'][] = 'مجالات العمل المختارة غير صالحة.';
+            $rawWorkSectionIds = [];
+        }
+        $workSectionIds = [];
+        foreach ($rawWorkSectionIds as $rawId) {
+            $value = filter_var($rawId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($value === false) {
+                $errors['work_section_ids'][] = 'مجالات العمل المختارة غير صالحة.';
+                continue;
+            }
+            $workSectionIds[] = (int) $value;
+        }
+        $workSectionIds = array_values(array_unique($workSectionIds));
+        if (in_array($type, ['subcontractor', 'both'], true) && $workSectionIds === []) {
+            $errors['work_section_ids'][] = 'اختر مجال عمل واحداً على الأقل لمقاول الباطن.';
+        }
         foreach (['phone', 'mobile'] as $field) {
             $value = $this->nullable($input[$field] ?? null);
             if ($value !== null && !preg_match('/^[0-9+()\-\s]{3,30}$/', $value)) {
@@ -59,6 +77,7 @@ final class VendorValidator
             $email,
             $this->nullable($input['address'] ?? null),
             $this->nullable($input['notes'] ?? null),
+            $workSectionIds,
         );
     }
 

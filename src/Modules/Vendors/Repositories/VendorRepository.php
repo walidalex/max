@@ -42,6 +42,46 @@ final class VendorRepository
         $this->database->execute('UPDATE vendors SET is_active = ? WHERE id = ?', [$active, $id]);
     }
 
+    /** @return list<array<string, mixed>> */
+    public function workSections(?int $vendorId = null): array
+    {
+        $sql = 'SELECT ws.id, ws.section_code, ws.name, ws.is_active, CASE WHEN vws.vendor_id IS NULL THEN 0 ELSE 1 END AS is_selected FROM work_sections ws LEFT JOIN vendor_work_sections vws ON vws.work_section_id = ws.id AND vws.vendor_id = ? WHERE ws.is_active = 1 OR vws.vendor_id IS NOT NULL ORDER BY ws.sort_order, ws.section_code';
+        $result = $this->database->execute($sql, [$vendorId ?? 0]);
+        return $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    /** @param list<int> $ids @return list<array{id: int, is_active: int}> */
+    public function workSectionsByIds(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $result = $this->database->execute("SELECT id, is_active FROM work_sections WHERE id IN ({$placeholders}) ORDER BY id", $ids);
+        return $result instanceof \mysqli_result ? array_map(static fn(array $row): array => ['id' => (int) $row['id'], 'is_active' => (int) $row['is_active']], $result->fetch_all(MYSQLI_ASSOC)) : [];
+    }
+
+    /** @return list<int> */
+    public function selectedWorkSectionIds(int $vendorId): array
+    {
+        $result = $this->database->execute('SELECT work_section_id FROM vendor_work_sections WHERE vendor_id = ? ORDER BY work_section_id', [$vendorId]);
+        return $result instanceof \mysqli_result ? array_map('intval', array_column($result->fetch_all(MYSQLI_ASSOC), 'work_section_id')) : [];
+    }
+
+    /** @param list<int> $ids */
+    public function syncWorkSections(int $vendorId, array $ids): void
+    {
+        if ($ids === []) {
+            $this->database->execute('DELETE FROM vendor_work_sections WHERE vendor_id = ?', [$vendorId]);
+            return;
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $this->database->execute("DELETE FROM vendor_work_sections WHERE vendor_id = ? AND work_section_id NOT IN ({$placeholders})", [$vendorId, ...$ids]);
+        foreach ($ids as $workSectionId) {
+            $this->database->execute('INSERT INTO vendor_work_sections (vendor_id, work_section_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE vendor_id = VALUES(vendor_id)', [$vendorId, $workSectionId]);
+        }
+    }
+
     /** @return array{recordsTotal: int, recordsFiltered: int, rows: list<array<string, mixed>>} */
     public function dataTable(VendorTableQuery $query): array
     {
@@ -59,9 +99,10 @@ final class VendorRepository
             'contact_number' => "COALESCE(c.mobile, c.phone, '')",
             'primary_contact' => "COALESCE(pc.name, '')",
             'is_active' => 'c.is_active',
+            'work_sections_count' => 'work_sections_count',
         ];
         $orderBy = $sortColumns[$query->sortColumn] ?? 'c.vendor_code';
-        $sql = "SELECT c.id, c.vendor_code, c.vendor_type, c.name, c.phone, c.mobile, c.is_active, pc.name AS primary_contact{$from}{$where} ORDER BY {$orderBy} {$query->sortDirection} LIMIT ? OFFSET ?";
+        $sql = "SELECT c.id, c.vendor_code, c.vendor_type, c.name, c.phone, c.mobile, c.is_active, pc.name AS primary_contact, (SELECT COUNT(*) FROM vendor_work_sections vws WHERE vws.vendor_id = c.id) AS work_sections_count{$from}{$where} ORDER BY {$orderBy} {$query->sortDirection} LIMIT ? OFFSET ?";
         $result = $this->database->execute($sql, [...$params, $query->length, $query->start]);
 
         return [
