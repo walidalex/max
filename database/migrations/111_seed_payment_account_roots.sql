@@ -1,0 +1,1 @@
+INSERT INTO accounting_setup(mapping_key,account_id) SELECT 'cash_accounts_root',id FROM accounts WHERE account_code='111100' UNION ALL SELECT 'bank_accounts_root',id FROM accounts WHERE account_code='111200' ON DUPLICATE KEY UPDATE account_id=VALUES(account_id)
