@@ -28,12 +28,14 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 
 - `clients` stores the immutable business code separately from its internal numeric ID. Records are activated or deactivated and never physically deleted.
 - `client_type` is `VARCHAR(20)` and restricted to `individual` or `company` by both application validation and a database check constraint.
+- Individual clients may store `national_id`; company identity fields are normalized to `NULL` for individuals, while `national_id` is normalized to `NULL` for companies.
 - `client_contacts` allows multiple contacts. A generated nullable slot with a unique key enforces at most one primary contact per client.
 - `number_sequences` provides an atomic counter. Its current use is limited to generating client codes such as `CL-0001`; other document types may adopt different numbering policies later.
 
 ## Vendors
 
 - `vendors` is the shared master record for suppliers, subcontractors, and entities serving as both. `vendor_type` is a validated `VARCHAR(20)` with a database check constraint.
+- Vendor master data includes an optional Egyptian bank name, bank account, InstaPay number, and an Egypt governorate code validated by the application. The governorate may be set to `all` when the vendor serves all governorates.
 - `vendor_contacts` supports multiple contacts and enforces at most one primary contact with a generated nullable slot and unique key.
 - Vendor codes use the independent `vendors` sequence and are generated as `VN-0001`. Vendors are deactivated rather than physically deleted.
 
@@ -80,7 +82,7 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 
 - Projects may have multiple subcontractor agreements. `subcontract_code` is the single system-generated business number and is not editable by users.
 - New agreements require an active vendor of type `subcontractor` or `both`; later vendor deactivation does not invalidate historical contracts.
-- Each subcontract has one scope section derived from its selected work section. The initial scope is created transactionally with the agreement; BOQ approval atomically synchronizes the generated DECIMAL total to the contract value.
+- Each subcontract has one scope section derived from its selected work section. The initial scope is created transactionally with the agreement; BOQ approval atomically synchronizes the generated DECIMAL total to the contract value and changes the draft subcontract to `active`.
 
 ## Subcontract progress certificates
 

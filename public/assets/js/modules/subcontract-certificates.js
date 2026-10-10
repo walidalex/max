@@ -8,14 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const statuses = {draft: 'مسودة', approved: 'معتمد', cancelled: 'ملغي'};
     const subcontractId = Number(card.dataset.subcontractId);
     const table = window.AppDataTable.create(tableElement, {
-        order: [[2, 'desc']],
+        order: [[1, 'desc']],
         ajax: {
             url: `/api/subcontracts/${subcontractId}/certificates`,
             data(data) { data.status = document.getElementById('certificate-status-filter').value; },
         },
         columns: [
-            {data: 'certificate_code', render: (value, type, row) => type === 'display' ? `<a href="/subcontract-certificates/${Number(row.id)}">${escape(value)}</a>` : value},
-            {data: 'certificate_number', render: value => escape(value || '—')},
+            {data: 'certificate_code', render: (value, type, row) => type === 'display' ? `<a href="/subcontract-certificates/${Number(row.id)}">${escape(row.certificate_number || value)}</a>` : value},
             {data: 'certificate_date', render: escape},
             {data: 'period_from', render: (value, type, row) => escape(`${value || '—'} إلى ${row.period_to || '—'}`)},
             {data: 'previous_earned_value', render: value => escape(value ?? '—')},

@@ -107,8 +107,7 @@ final class ClientContractController
     {
         $c = $id === null ? null : $this->service->find($id);
         $refs = $this->service->references($id);
-        $contacts =
-            $c === null ? [] : $this->service->contacts((int) $c["project_id"]);
+        $contacts = $c === null ? [] : $this->service->contacts((int) $c["project_id"]);
         return Response::html(
             $this->view->render("modules/client-contracts/form", [
                 "title" => $id === null ? "إضافة عقد عميل" : "تعديل عقد العميل",

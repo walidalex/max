@@ -26,6 +26,7 @@ final class VendorController
             'canCreate' => $this->authorization->can('vendors.create'),
             'canEdit' => $this->authorization->can('vendors.edit'),
             'canActivate' => $this->authorization->can('vendors.activate'),
+            'canManageWorkSections' => $this->authorization->can('cost_structure.manage'),
             'workSections' => $this->vendors->workSections(),
             'openCreateModal' => (string) $request->input('create', '') === '1',
         ]));
@@ -69,6 +70,7 @@ final class VendorController
             'title' => 'تعديل المورد',
             'vendor' => $this->vendors->find($id),
             'workSections' => $this->vendors->workSections($id),
+            'canManageWorkSections' => $this->authorization->can('cost_structure.manage'),
         ]));
     }
 

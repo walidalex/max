@@ -54,7 +54,7 @@ Contract BOQ preserves the original scope as section, item, and unit snapshots w
 
 ## Subcontracts
 
-Subcontracts and SubcontractBoq are isolated modules for project execution agreements. Creation uses a three-step wizard for contract data, the initial scope, and print review. The selected work section becomes the agreement's single BOQ section, and the header, scope, and initial items are created in one transaction. They reuse validated BOQ snapshot and DECIMAL patterns without sharing client BOQ tables. Vendor eligibility is enforced server-side for new assignments while historical relationships remain readable.
+Subcontracts and SubcontractBoq are isolated modules for project execution agreements. Creation uses a three-step wizard for contract data, the initial scope, and print review. The selected work section becomes the agreement's single BOQ section, and the header, scope, and initial items are created in one transaction. BOQ approval atomically freezes its total and activates the draft subcontract; the two states cannot diverge. They reuse validated BOQ snapshot and DECIMAL patterns without sharing client BOQ tables. Vendor eligibility is enforced server-side for new assignments while historical relationships remain readable.
 
 ## Subcontract progress certificates
 

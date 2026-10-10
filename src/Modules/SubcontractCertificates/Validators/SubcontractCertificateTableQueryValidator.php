@@ -10,7 +10,7 @@ final class SubcontractCertificateTableQueryValidator
 {
     public function validate(array $input, int $subcontractId): SubcontractCertificateTableQuery
     {
-        $columns = ['certificate_code', 'certificate_number', 'certificate_date', 'period_from', 'previous_earned_value', 'current_earned_value', 'cumulative_earned_value', 'status'];
+        $columns = ['certificate_code', 'certificate_date', 'period_from', 'previous_earned_value', 'current_earned_value', 'cumulative_earned_value', 'progress_percentage', 'status', 'certificate_code'];
         $index = max(0, (int) ($input['order'][0]['column'] ?? 0));
         $status = (string) ($input['status'] ?? '');
         return new SubcontractCertificateTableQuery(

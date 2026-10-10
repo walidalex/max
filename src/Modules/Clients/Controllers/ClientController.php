@@ -102,9 +102,16 @@ final class ClientController
         }
         try {
             $id = $this->clients->save($this->validator->validate($request->all()), $id);
+            if ($request->expectsJson()) {
+                $client = $this->clients->find($id);
+                return Response::json(['ok' => true, 'message' => 'تم حفظ بيانات العميل.', 'client' => ['id' => $id, 'client_code' => $client['client_code'], 'name' => $client['company_name'] ?: $client['name']]]);
+            }
             $this->success('تم حفظ بيانات العميل.');
             return Response::redirect("/clients/{$id}");
         } catch (ValidationException|BusinessRuleException $exception) {
+            if ($request->expectsJson()) {
+                return Response::json(['ok' => false, 'message' => $this->message($exception), 'errors' => $exception instanceof ValidationException ? $exception->errors : []], 422);
+            }
             $this->error($this->message($exception));
             return Response::redirect($id === null ? '/clients/create' : "/clients/{$id}/edit");
         }

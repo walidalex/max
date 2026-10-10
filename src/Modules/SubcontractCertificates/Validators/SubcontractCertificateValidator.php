@@ -20,8 +20,7 @@ final class SubcontractCertificateValidator
         if ($to === false) $errors['period_to'][] = 'تاريخ نهاية الفترة غير صالح.';
         if (is_string($from) && is_string($to) && $to < $from) $errors['period_to'][] = 'نهاية الفترة يجب ألا تسبق بدايتها.';
 
-        $number = $this->nullable($input['certificate_number'] ?? null);
-        if ($number !== null && mb_strlen($number) > 100) $errors['certificate_number'][] = 'الرقم المرجعي أطول من المسموح.';
+        $number = null;
         $notes = $this->nullable($input['notes'] ?? null);
         if ($notes !== null && mb_strlen($notes) > 5000) $errors['notes'][] = 'الملاحظات أطول من المسموح.';
 

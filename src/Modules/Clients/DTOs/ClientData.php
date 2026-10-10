@@ -10,6 +10,7 @@ final readonly class ClientData
         public string $clientType,
         public ?string $name,
         public ?string $companyName,
+        public ?string $nationalId,
         public ?string $taxNumber,
         public ?string $commercialRegistration,
         public ?string $phone,

@@ -19,7 +19,7 @@ final class ProjectController
   catch(ValidationException|BusinessRuleException $e){$message=$e instanceof ValidationException?(string)reset($e->errors['status']):$e->getMessage();$this->flash('error','تعذر التحديث',$message);}
   return Response::redirect("/projects/{$id}");
  }
- private function form(?int $id):Response{$p=$id===null?null:$this->projects->find($id);$refs=$this->projects->referenceData();$contacts=$p===null?[]:$this->projects->contacts((int)$p['client_id']);return Response::html($this->view->render('modules/projects/form',['title'=>$id===null?'إضافة مشروع':'تعديل المشروع','project'=>$p,'contacts'=>$contacts,...$refs]));}
+ private function form(?int $id):Response{$p=$id===null?null:$this->projects->find($id);$refs=$this->projects->referenceData();$contacts=$p===null?[]:$this->projects->contacts((int)$p['client_id']);return Response::html($this->view->render('modules/projects/form',['title'=>$id===null?'إضافة مشروع':'تعديل المشروع','project'=>$p,'contacts'=>$contacts,'canCreateClient'=>$this->auth->can('clients.create'),...$refs]));}
  private function save(Request $r,?int $id):Response
  {
   if(!$this->csrf->isValid($r->input('_token')))return Response::html('انتهت صلاحية الطلب.',419);

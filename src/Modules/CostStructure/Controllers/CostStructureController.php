@@ -28,7 +28,7 @@ final class CostStructureController
     private function execute(Request $r,callable $action): Response
     {
         if(!$this->csrf->isValid($r->input('_token')))return Response::json(['message'=>'انتهت صلاحية الطلب. أعد تحميل الصفحة.'],419);
-        try{$action();return Response::json(['message'=>'تم حفظ التغييرات بنجاح.']);}
+        try{$result=$action();return Response::json(['message'=>'تم حفظ التغييرات بنجاح.','id'=>is_int($result)?$result:null]);}
         catch(ValidationException $e){return Response::json(['message'=>'يرجى مراجعة البيانات المدخلة.','errors'=>$e->errors],422);}
         catch(BusinessRuleException $e){return Response::json(['message'=>$e->getMessage()],400);}
     }

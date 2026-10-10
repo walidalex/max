@@ -57,7 +57,7 @@ final class SubcontractController
     private function form(?int $id):Response
     {
         $canCreateVendor=$id===null&&$this->authorization->can('vendors.create');
-        return Response::html($this->view->render('modules/subcontracts/form',['title'=>$id?'تعديل عقد مقاول باطن':'إضافة عقد مقاول باطن','subcontract'=>$id?$this->service->find($id):null,'canCreateVendor'=>$canCreateVendor,'workSections'=>$canCreateVendor?$this->vendors->workSections():[],...$this->service->refs()]));
+        return Response::html($this->view->render('modules/subcontracts/form',['title'=>$id?'تعديل عقد مقاول باطن':'إضافة عقد مقاول باطن','subcontract'=>$id?$this->service->find($id):null,'canCreateVendor'=>$canCreateVendor,'canManageWorkSections'=>$this->authorization->can('cost_structure.manage'),'workSections'=>$canCreateVendor?$this->vendors->workSections():[],...$this->service->refs()]));
     }
     private function save(Request $request,?int $id):Response
     {

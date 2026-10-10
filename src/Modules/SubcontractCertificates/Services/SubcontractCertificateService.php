@@ -55,7 +55,6 @@ final class SubcontractCertificateService
             $existing = $id === null ? null : $this->certificates->find($id, true);
             if ($id === null && !in_array($subcontract['status'], ['active', 'suspended'], true)) throw new BusinessRuleException('يمكن إنشاء المستخلص لعقد نشط أو معلق فقط.');
             if ($existing !== null && ((int) $existing['subcontract_id'] !== $data->subcontractId || $existing['status'] !== 'draft')) throw new BusinessRuleException('المستخلص غير قابل للتعديل.');
-            if ($data->certificateNumber !== null && $this->certificates->numberExists($data->subcontractId, $data->certificateNumber, $id)) throw new BusinessRuleException('رقم المستخلص المرجعي مستخدم لهذا العقد.');
             if ($subcontract['pricing_method'] === 'boq' && $subcontract['boq_status'] !== 'approved') throw new BusinessRuleException('يجب وجود BOQ معتمد للعقد.');
 
             if ($id === null) {

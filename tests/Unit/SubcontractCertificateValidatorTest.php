@@ -6,8 +6,8 @@ use App\Core\Exceptions\ValidationException;
 use App\Modules\SubcontractCertificates\Validators\SubcontractCertificateValidator;
 
 $validator = new SubcontractCertificateValidator();
-$lump = $validator->validate(['certificate_date' => '2026-09-14', 'current_progress_percentage' => '5.25'], 7, 'lump_sum');
-if ($lump->currentProgressPercentage !== '5.2500' || $lump->quantities !== []) throw new RuntimeException('Lump-sum certificate validation failed.');
+$lump = $validator->validate(['certificate_date' => '2026-09-14', 'certificate_number' => 'MANUAL-NUMBER', 'current_progress_percentage' => '5.25'], 7, 'lump_sum');
+if ($lump->currentProgressPercentage !== '5.2500' || $lump->quantities !== [] || $lump->certificateNumber !== null) throw new RuntimeException('Lump-sum certificate validation failed.');
 $boq = $validator->validate(['certificate_date' => '2026-09-14', 'quantities' => ['9' => '2.125']], 7, 'boq');
 if (($boq->quantities[9] ?? null) !== '2.1250' || $boq->currentProgressPercentage !== null) throw new RuntimeException('BOQ certificate validation failed.');
 foreach ([

@@ -23,8 +23,8 @@ final class VendorRepository
     public function create(string $code, VendorData $data): int
     {
         $this->database->execute(
-            'INSERT INTO vendors (vendor_code, vendor_type, name, tax_number, commercial_registration, phone, mobile, email, address, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$code, $data->vendorType, $data->name, $data->taxNumber, $data->commercialRegistration, $data->phone, $data->mobile, $data->email, $data->address, $data->notes],
+            'INSERT INTO vendors (vendor_code, vendor_type, name, tax_number, commercial_registration, phone, mobile, email, bank_name, bank_account, instapay_number, governorate, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$code, $data->vendorType, $data->name, $data->taxNumber, $data->commercialRegistration, $data->phone, $data->mobile, $data->email, $data->bankName, $data->bankAccount, $data->instapayNumber, $data->governorate, $data->address],
         );
         return (int) $this->database->connection()->insert_id;
     }
@@ -32,8 +32,8 @@ final class VendorRepository
     public function update(int $id, VendorData $data): void
     {
         $this->database->execute(
-            'UPDATE vendors SET vendor_type = ?, name = ?, tax_number = ?, commercial_registration = ?, phone = ?, mobile = ?, email = ?, address = ?, notes = ? WHERE id = ?',
-            [$data->vendorType, $data->name, $data->taxNumber, $data->commercialRegistration, $data->phone, $data->mobile, $data->email, $data->address, $data->notes, $id],
+            'UPDATE vendors SET vendor_type = ?, name = ?, tax_number = ?, commercial_registration = ?, phone = ?, mobile = ?, email = ?, bank_name = ?, bank_account = ?, instapay_number = ?, governorate = ?, address = ? WHERE id = ?',
+            [$data->vendorType, $data->name, $data->taxNumber, $data->commercialRegistration, $data->phone, $data->mobile, $data->email, $data->bankName, $data->bankAccount, $data->instapayNumber, $data->governorate, $data->address, $id],
         );
     }
 

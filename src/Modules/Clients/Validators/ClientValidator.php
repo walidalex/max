@@ -19,6 +19,7 @@ final class ClientValidator
             'client_type' => 'required|string|max:20',
             'name' => 'string|max:190',
             'company_name' => 'string|max:190',
+            'national_id' => 'string|max:30',
             'tax_number' => 'string|max:80',
             'commercial_registration' => 'string|max:80',
             'phone' => 'string|max:30',
@@ -59,10 +60,11 @@ final class ClientValidator
 
         return new ClientData(
             $type,
-            $name,
-            $companyName,
-            $this->nullable($input['tax_number'] ?? null),
-            $this->nullable($input['commercial_registration'] ?? null),
+            $type === 'individual' ? $name : null,
+            $type === 'company' ? $companyName : null,
+            $type === 'individual' ? $this->nullable($input['national_id'] ?? null) : null,
+            $type === 'company' ? $this->nullable($input['tax_number'] ?? null) : null,
+            $type === 'company' ? $this->nullable($input['commercial_registration'] ?? null) : null,
             $this->nullable($input['phone'] ?? null),
             $this->nullable($input['mobile'] ?? null),
             $email,

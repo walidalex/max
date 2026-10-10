@@ -8,9 +8,10 @@ use App\Modules\CostStructure\DTOs\WorkSectionData;
 use App\Modules\CostStructure\Repositories\CostCodeRepository;
 use App\Modules\CostStructure\Repositories\UnitRepository;
 use App\Modules\CostStructure\Repositories\WorkSectionRepository;
+use App\Shared\Numbering\NumberGeneratorService;
 final class CostStructureService
 {
-    public function __construct(private readonly WorkSectionRepository $sections,private readonly CostCodeRepository $codes,private readonly UnitRepository $units) {}
+    public function __construct(private readonly WorkSectionRepository $sections,private readonly CostCodeRepository $codes,private readonly UnitRepository $units,private readonly NumberGeneratorService $numbers) {}
     public function catalogue(): array
     {
         $sections=$this->sections->all(); foreach($sections as &$section){$section['codes']=[];} unset($section);
@@ -18,7 +19,7 @@ final class CostStructureService
         foreach($this->codes->all() as $code){$sectionId=(int)$code['work_section_id']; if(isset($indexes[$sectionId])){$sections[$indexes[$sectionId]]['codes'][]=$code;}}
         return ['sections'=>$sections,'units'=>$this->units->all()];
     }
-    public function saveSection(WorkSectionData $data,?int $id=null): int { if($this->sections->codeExists($data->sectionCode,$id))throw new BusinessRuleException('كود قسم الأعمال مستخدم بالفعل.'); if($id===null)return $this->sections->create($data); $this->requireSection($id); $this->sections->update($id,$data); return $id; }
+    public function saveSection(WorkSectionData $data,?int $id=null): int { $code=$data->sectionCode; if($id===null&&$code===''){do{$code=$this->numbers->nextWorkSectionCode();}while($this->sections->codeExists($code));} if($code==='')throw new BusinessRuleException('كود قسم الأعمال مطلوب عند التعديل.'); if($this->sections->codeExists($code,$id))throw new BusinessRuleException('كود قسم الأعمال مستخدم بالفعل.'); $data=new WorkSectionData($code,$data->name,$data->description,$data->sortOrder); if($id===null)return$this->sections->create($data); $this->requireSection($id); $this->sections->update($id,$data); return $id; }
     public function saveUnit(UnitData $data,?int $id=null): int { if($this->units->codeExists($data->code,$id))throw new BusinessRuleException('كود الوحدة مستخدم بالفعل.'); if($id===null)return $this->units->create($data); $this->requireUnit($id); $this->units->update($id,$data); return $id; }
     public function saveCode(CostCodeData $data,?int $id=null): int
     {

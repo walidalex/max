@@ -14,8 +14,11 @@ final readonly class VendorData
         public ?string $phone,
         public ?string $mobile,
         public ?string $email,
+        public ?string $bankName,
+        public ?string $bankAccount,
+        public ?string $instapayNumber,
+        public ?string $governorate,
         public ?string $address,
-        public ?string $notes,
         /** @var list<int> */
         public array $workSectionIds,
     ) {}

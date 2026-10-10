@@ -18,13 +18,13 @@ final class ProjectRepository
  public function hasClientContract(int $id):bool{return $this->exists('SELECT 1 FROM client_contracts WHERE project_id=? LIMIT 1',[$id]);}
  public function create(string $code,ProjectData $d):int
  {
-  $sql='INSERT INTO projects(project_code,name,client_id,primary_contact_id,project_manager_id,project_type,status,start_date,expected_end_date,actual_end_date,site_address,city,area,description,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
-  $this->db->execute($sql,[$code,$d->name,$d->clientId,$d->primaryContactId,$d->projectManagerId,$d->projectType,$d->status,$d->startDate,$d->expectedEndDate,$d->actualEndDate,$d->siteAddress,$d->city,$d->area,$d->description,$d->notes]);return (int)$this->db->connection()->insert_id;
+  $sql='INSERT INTO projects(project_code,name,client_id,primary_contact_id,project_manager_id,project_type,status,start_date,expected_end_date,actual_end_date,site_address,governorate,area,description,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+  $this->db->execute($sql,[$code,$d->name,$d->clientId,$d->primaryContactId,$d->projectManagerId,$d->projectType,$d->status,$d->startDate,$d->expectedEndDate,$d->actualEndDate,$d->siteAddress,$d->governorate,$d->area,$d->description,$d->notes]);return (int)$this->db->connection()->insert_id;
  }
  public function update(int $id,ProjectData $d):void
  {
-  $sql='UPDATE projects SET name=?,client_id=?,primary_contact_id=?,project_manager_id=?,project_type=?,start_date=?,expected_end_date=?,actual_end_date=?,site_address=?,city=?,area=?,description=?,notes=? WHERE id=?';
-  $this->db->execute($sql,[$d->name,$d->clientId,$d->primaryContactId,$d->projectManagerId,$d->projectType,$d->startDate,$d->expectedEndDate,$d->actualEndDate,$d->siteAddress,$d->city,$d->area,$d->description,$d->notes,$id]);
+  $sql='UPDATE projects SET name=?,client_id=?,primary_contact_id=?,project_manager_id=?,project_type=?,start_date=?,expected_end_date=?,actual_end_date=?,site_address=?,governorate=?,area=?,description=?,notes=? WHERE id=?';
+  $this->db->execute($sql,[$d->name,$d->clientId,$d->primaryContactId,$d->projectManagerId,$d->projectType,$d->startDate,$d->expectedEndDate,$d->actualEndDate,$d->siteAddress,$d->governorate,$d->area,$d->description,$d->notes,$id]);
  }
  public function changeStatus(int $id,string $status):void{$this->db->execute('UPDATE projects SET status=? WHERE id=?',[$status,$id]);}
  public function clients():array{$r=$this->db->execute("SELECT id,client_code,COALESCE(company_name,name) name,is_active FROM clients ORDER BY COALESCE(company_name,name)");return $r instanceof \mysqli_result?$r->fetch_all(MYSQLI_ASSOC):[];}
@@ -41,7 +41,7 @@ final class ProjectRepository
  }
  private function filters(ProjectTableQuery $q):array
  {
-  $c=[];$p=[];if($q->search!==''){$s='%'.$q->search.'%';$c[]="(p.project_code LIKE ? OR p.name LIKE ? OR COALESCE(c.company_name,c.name,'') LIKE ? OR p.site_address LIKE ? OR p.city LIKE ?)";array_push($p,$s,$s,$s,$s,$s);}
+  $c=[];$p=[];if($q->search!==''){$s='%'.$q->search.'%';$c[]="(p.project_code LIKE ? OR p.name LIKE ? OR COALESCE(c.company_name,c.name,'') LIKE ? OR p.site_address LIKE ? OR p.governorate LIKE ?)";array_push($p,$s,$s,$s,$s,$s);}
   foreach(['client_id'=>$q->clientId,'project_manager_id'=>$q->projectManagerId,'project_type'=>$q->projectType,'status'=>$q->status] as $field=>$v){if($v!==null){$c[]='p.'.$field.'=?';$p[]=$v;}}
   return [$c===[]?'':' WHERE '.implode(' AND ',$c),$p];
  }

@@ -23,8 +23,11 @@ final class VendorValidator
             'phone' => 'string|max:30',
             'mobile' => 'string|max:30',
             'email' => 'string|max:190',
+            'bank_name' => 'string|max:60',
+            'bank_account' => 'string|max:190',
+            'instapay_number' => 'string|max:100',
+            'governorate' => 'string|max:40',
             'address' => 'string|max:500',
-            'notes' => 'string|max:5000',
         ])) {
             throw new ValidationException($this->validator->errors());
         }
@@ -32,12 +35,20 @@ final class VendorValidator
         $type = trim((string) ($input['vendor_type'] ?? ''));
         $name = $this->nullable($input['name'] ?? null);
         $email = $this->nullable($input['email'] ?? null);
+        $bankName = $this->nullable($input['bank_name'] ?? null);
+        $governorate = $this->nullable($input['governorate'] ?? null);
         $errors = [];
         if (!in_array($type, ['supplier', 'subcontractor', 'both'], true)) {
             $errors['vendor_type'][] = 'نوع المورد غير صالح.';
         }
         if ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $errors['email'][] = 'البريد الإلكتروني غير صالح.';
+        }
+        if ($bankName !== null && !array_key_exists($bankName, egypt_banks())) {
+            $errors['bank_name'][] = 'البنك المختار غير صالح.';
+        }
+        if ($governorate !== null && !array_key_exists($governorate, egypt_governorates())) {
+            $errors['governorate'][] = 'المحافظة المختارة غير صالحة.';
         }
         $rawWorkSectionIds = $input['work_section_ids'] ?? [];
         if (!is_array($rawWorkSectionIds)) {
@@ -75,8 +86,11 @@ final class VendorValidator
             $this->nullable($input['phone'] ?? null),
             $this->nullable($input['mobile'] ?? null),
             $email,
+            $bankName,
+            $this->nullable($input['bank_account'] ?? null),
+            $this->nullable($input['instapay_number'] ?? null),
+            $governorate,
             $this->nullable($input['address'] ?? null),
-            $this->nullable($input['notes'] ?? null),
             $workSectionIds,
         );
     }

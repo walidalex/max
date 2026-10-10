@@ -8,19 +8,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initializeVendorForm(form) {
   const type = form.querySelector('.js-vendor-type');
-  const checkboxes = [...form.querySelectorAll('.js-work-section-checkbox')];
+  const checkboxes = () => [...form.querySelectorAll('.js-work-section-checkbox')];
   const refresh = () => {
-    checkboxes.forEach((checkbox) => checkbox.closest('.vendor-work-section')?.classList.toggle('is-selected', checkbox.checked));
-    const count = checkboxes.filter((checkbox) => checkbox.checked).length;
+    checkboxes().forEach((checkbox) => checkbox.closest('.vendor-work-section')?.classList.toggle('is-selected', checkbox.checked));
+    const count = checkboxes().filter((checkbox) => checkbox.checked).length;
     const badge = form.querySelector('.js-selected-count');
     if (badge) badge.textContent = `${count} محدد`;
     const required = ['subcontractor', 'both'].includes(type?.value || '');
     const hint = form.querySelector('.js-work-sections-hint');
     if (hint) hint.textContent = required ? 'اختر مجال عمل واحداً على الأقل لمقاول الباطن.' : 'يمكنك اختيار المجالات التي يعمل بها المورد إن وجدت.';
   };
-  checkboxes.forEach((checkbox) => checkbox.addEventListener('change', refresh));
+  checkboxes().forEach((checkbox) => checkbox.addEventListener('change', refresh));
   type?.addEventListener('change', refresh);
+  const creator = form.querySelector('.js-work-section-create');
+  form.querySelector('.js-show-work-section-create')?.addEventListener('click', () => {
+    creator?.classList.toggle('d-none');
+    if (!creator?.classList.contains('d-none')) creator.querySelector('[data-work-section-field="name"]')?.focus();
+  });
+  form.querySelector('.js-save-work-section')?.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    const name = creator?.querySelector('[data-work-section-field="name"]');
+    const error = creator?.querySelector('.js-work-section-error');
+    if (!name?.value.trim()) {
+      if (error) { error.textContent = 'أدخل اسم مجال العمل.'; error.classList.remove('d-none'); }
+      return;
+    }
+    button.disabled = true;
+    if (error) error.classList.add('d-none');
+    const data = new FormData();
+    data.append('_token', form.querySelector('[name="_token"]')?.value || '');
+    data.append('name', name.value.trim());
+    data.append('sort_order', '0');
+    try {
+      const response = await fetch('/settings/cost-structure/sections', {method: 'POST', headers: {Accept: 'application/json'}, body: data});
+      const payload = await response.json();
+      if (!response.ok || !payload.id) throw new Error(Object.values(payload.errors || {}).flat()[0] || payload.message || 'تعذر إضافة مجال العمل.');
+      const label = document.createElement('label');
+      label.className = 'vendor-work-section is-selected';
+      label.innerHTML = `<input class="visually-hidden js-work-section-checkbox" type="checkbox" name="work_section_ids[]" value="${Number(payload.id)}" checked><span class="vendor-work-section-icon"><i class="ti ti-${workSectionIcon(name.value.trim())}"></i></span><span class="vendor-work-section-text"><strong></strong></span><i class="ti ti-circle-check vendor-work-section-check"></i>`;
+      label.querySelector('strong').textContent = name.value.trim();
+      label.querySelector('input').addEventListener('change', refresh);
+      form.querySelector('.vendor-work-sections')?.append(label);
+      name.value = '';
+      creator.classList.add('d-none');
+      refresh();
+      window.AppAlert?.show({type: 'success', title: 'تمت الإضافة', text: 'تم إنشاء مجال العمل واختياره للمورد.'});
+    } catch (exception) {
+      if (error) { error.textContent = exception.message; error.classList.remove('d-none'); }
+    } finally {
+      button.disabled = false;
+    }
+  });
   refresh();
+}
+
+function workSectionIcon(name) {
+  const rules = [['مدني','road'],['مباني','building'],['محارة','wall'],['عزل','droplet-off'],['كهرباء','bolt'],['سباكة','bath'],['سيراميك','grid-dots'],['جبس','layout-navbar'],['تشطيبات','adjustments-horizontal'],['تكييف','air-conditioning'],['شفاط','propeller'],['أبواب','door'],['دهان','paint'],['رخام','columns'],['جي آر سي','building-arch'],['GRC','building-arch'],['مصروفات','receipt-2']];
+  return rules.find(([keyword]) => name.includes(keyword))?.[1] || 'building-construction';
 }
 
 function initializeCreateModal() {

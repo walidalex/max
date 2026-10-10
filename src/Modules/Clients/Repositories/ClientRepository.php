@@ -23,8 +23,8 @@ final class ClientRepository
     public function create(string $code, ClientData $data): int
     {
         $this->database->execute(
-            'INSERT INTO clients (client_code, client_type, name, company_name, tax_number, commercial_registration, phone, mobile, email, address, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$code, $data->clientType, $data->name, $data->companyName, $data->taxNumber, $data->commercialRegistration, $data->phone, $data->mobile, $data->email, $data->address, $data->notes],
+            'INSERT INTO clients (client_code, client_type, name, company_name, national_id, tax_number, commercial_registration, phone, mobile, email, address, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$code, $data->clientType, $data->name, $data->companyName, $data->nationalId, $data->taxNumber, $data->commercialRegistration, $data->phone, $data->mobile, $data->email, $data->address, $data->notes],
         );
         return (int) $this->database->connection()->insert_id;
     }
@@ -32,8 +32,8 @@ final class ClientRepository
     public function update(int $id, ClientData $data): void
     {
         $this->database->execute(
-            'UPDATE clients SET client_type = ?, name = ?, company_name = ?, tax_number = ?, commercial_registration = ?, phone = ?, mobile = ?, email = ?, address = ?, notes = ? WHERE id = ?',
-            [$data->clientType, $data->name, $data->companyName, $data->taxNumber, $data->commercialRegistration, $data->phone, $data->mobile, $data->email, $data->address, $data->notes, $id],
+            'UPDATE clients SET client_type = ?, name = ?, company_name = ?, national_id = ?, tax_number = ?, commercial_registration = ?, phone = ?, mobile = ?, email = ?, address = ?, notes = ? WHERE id = ?',
+            [$data->clientType, $data->name, $data->companyName, $data->nationalId, $data->taxNumber, $data->commercialRegistration, $data->phone, $data->mobile, $data->email, $data->address, $data->notes, $id],
         );
     }
 

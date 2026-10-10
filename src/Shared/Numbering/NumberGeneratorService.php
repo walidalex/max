@@ -18,6 +18,11 @@ final class NumberGeneratorService
         return sprintf('VN-%04d', $this->sequences->next('vendors'));
     }
 
+    public function nextWorkSectionCode(): string
+    {
+        return sprintf('%02d', $this->sequences->next('work_sections'));
+    }
+
     public function nextProjectCode(int $year): string
     {
         return sprintf('PRJ-%d-%04d', $year, $this->sequences->next('projects:' . $year));
@@ -26,6 +31,11 @@ final class NumberGeneratorService
     public function nextClientContractCode(int $year): string
     {
         return sprintf('CTR-%d-%04d', $year, $this->sequences->next('client_contracts:' . $year));
+    }
+
+    public function nextClientContractNumber(int $year): string
+    {
+        return sprintf('CC-%d-%04d', $year, $this->sequences->next('client_contract_numbers:' . $year));
     }
 
     public function nextContractVariationCode(int $year): string

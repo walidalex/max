@@ -24,17 +24,9 @@ final class SubcontractCertificateRepository
         return $this->one("SELECT c.*,s.subcontract_code,s.title subcontract_title,s.pricing_method,s.contract_value,s.status subcontract_status,p.name project_name,v.name vendor_name,au.name approved_by_name,cu.name cancelled_by_name,CASE WHEN s.pricing_method='boq' AND s.contract_value>0 THEN ROUND(COALESCE(c.current_earned_value,0)*100/s.contract_value,4) WHEN s.pricing_method='boq' THEN 0 ELSE c.current_progress_percentage END display_current_progress_percentage,CASE WHEN s.pricing_method='boq' AND s.contract_value>0 THEN ROUND(COALESCE(c.cumulative_earned_value,0)*100/s.contract_value,4) WHEN s.pricing_method='boq' THEN 0 ELSE c.cumulative_progress_percentage END display_cumulative_progress_percentage FROM subcontract_progress_certificates c JOIN subcontracts s ON s.id=c.subcontract_id JOIN projects p ON p.id=s.project_id JOIN vendors v ON v.id=s.vendor_id LEFT JOIN users au ON au.id=c.approved_by LEFT JOIN users cu ON cu.id=c.cancelled_by WHERE c.id=? LIMIT 1", [$id]);
     }
 
-    public function numberExists(int $subcontractId, string $number, ?int $exceptId = null): bool
-    {
-        $sql = 'SELECT 1 FROM subcontract_progress_certificates WHERE subcontract_id=? AND certificate_number=?' . ($exceptId === null ? '' : ' AND id<>?') . ' LIMIT 1';
-        $params = $exceptId === null ? [$subcontractId, $number] : [$subcontractId, $number, $exceptId];
-        $result = $this->db->execute($sql, $params);
-        return $result instanceof \mysqli_result && $result->num_rows > 0;
-    }
-
     public function create(string $code, SubcontractCertificateData $data): int
     {
-        $this->db->execute("INSERT INTO subcontract_progress_certificates(certificate_code,certificate_number,subcontract_id,period_from,period_to,certificate_date,status,current_progress_percentage,notes) VALUES(?,?,?,?,?,?,'draft',?,?)", [$code, $data->certificateNumber, $data->subcontractId, $data->periodFrom, $data->periodTo, $data->certificateDate, $data->currentProgressPercentage, $data->notes]);
+        $this->db->execute("INSERT INTO subcontract_progress_certificates(certificate_code,certificate_number,subcontract_id,period_from,period_to,certificate_date,status,current_progress_percentage,notes) VALUES(?,?,?,?,?,?,'draft',?,?)", [$code, $code, $data->subcontractId, $data->periodFrom, $data->periodTo, $data->certificateDate, $data->currentProgressPercentage, $data->notes]);
         return (int) $this->db->connection()->insert_id;
     }
 
@@ -51,7 +43,7 @@ final class SubcontractCertificateRepository
 
     public function updateDraft(int $id, SubcontractCertificateData $data): void
     {
-        $this->db->execute('UPDATE subcontract_progress_certificates SET certificate_number=?,period_from=?,period_to=?,certificate_date=?,current_progress_percentage=?,notes=? WHERE id=? AND status=\'draft\'', [$data->certificateNumber, $data->periodFrom, $data->periodTo, $data->certificateDate, $data->currentProgressPercentage, $data->notes, $id]);
+        $this->db->execute('UPDATE subcontract_progress_certificates SET period_from=?,period_to=?,certificate_date=?,current_progress_percentage=?,notes=? WHERE id=? AND status=\'draft\'', [$data->periodFrom, $data->periodTo, $data->certificateDate, $data->currentProgressPercentage, $data->notes, $id]);
     }
 
     /** @param array<int, string> $quantities */
@@ -180,7 +172,7 @@ final class SubcontractCertificateRepository
         $clause = ' WHERE ' . implode(' AND ', $where);
         $total = $this->one('SELECT COUNT(*) total FROM subcontract_progress_certificates WHERE subcontract_id=?', [$query->subcontractId]);
         $filtered = $this->one('SELECT COUNT(*) total FROM subcontract_progress_certificates c' . $clause, $params);
-        $sort = ['certificate_code' => 'c.certificate_code', 'certificate_number' => 'c.certificate_number', 'certificate_date' => 'c.certificate_date', 'period_from' => 'c.period_from', 'previous_earned_value' => 'c.previous_earned_value', 'current_earned_value' => 'c.current_earned_value', 'cumulative_earned_value' => 'c.cumulative_earned_value', 'status' => 'c.status'];
+        $sort = ['certificate_code' => 'c.certificate_code', 'certificate_number' => 'c.certificate_number', 'certificate_date' => 'c.certificate_date', 'period_from' => 'c.period_from', 'previous_earned_value' => 'c.previous_earned_value', 'current_earned_value' => 'c.current_earned_value', 'cumulative_earned_value' => 'c.cumulative_earned_value', 'progress_percentage' => 'progress_percentage', 'status' => 'c.status'];
         $result = $this->db->execute('SELECT c.id,c.certificate_code,c.certificate_number,c.certificate_date,c.period_from,c.period_to,c.previous_earned_value,c.current_earned_value,c.cumulative_earned_value,c.current_progress_percentage,c.cumulative_progress_percentage,c.status,s.pricing_method,s.contract_value,CASE WHEN s.pricing_method=\'boq\' THEN CASE WHEN s.contract_value>0 THEN ROUND(COALESCE(c.cumulative_earned_value,0)*100/s.contract_value,4) ELSE 0 END ELSE COALESCE(c.cumulative_progress_percentage,0) END progress_percentage FROM subcontract_progress_certificates c JOIN subcontracts s ON s.id=c.subcontract_id' . $clause . ' ORDER BY ' . ($sort[$query->sortColumn] ?? 'c.certificate_date') . ' ' . $query->sortDirection . ',c.id ' . $query->sortDirection . ' LIMIT ? OFFSET ?', [...$params, $query->length, $query->start]);
         return ['recordsTotal' => (int) ($total['total'] ?? 0), 'recordsFiltered' => (int) ($filtered['total'] ?? 0), 'rows' => $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : []];
     }

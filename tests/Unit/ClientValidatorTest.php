@@ -7,12 +7,12 @@ use App\Core\Validation\Validator;
 use App\Modules\Clients\Validators\ClientValidator;
 
 $validator = new ClientValidator(new Validator());
-$individual = $validator->validate(['client_type' => 'individual', 'name' => 'عميل تجريبي', 'email' => '']);
-if ($individual->name !== 'عميل تجريبي' || $individual->email !== null || $individual->companyName !== null) {
+$individual = $validator->validate(['client_type' => 'individual', 'name' => 'عميل تجريبي', 'national_id' => '29801011234567', 'company_name' => 'تجاهل', 'tax_number' => 'تجاهل', 'commercial_registration' => 'تجاهل', 'email' => '']);
+if ($individual->name !== 'عميل تجريبي' || $individual->nationalId !== '29801011234567' || $individual->email !== null || $individual->companyName !== null || $individual->taxNumber !== null || $individual->commercialRegistration !== null) {
     throw new RuntimeException('Individual client validation or normalization failed.');
 }
-$company = $validator->validate(['client_type' => 'company', 'company_name' => 'شركة تجريبية', 'email' => 'info@example.com']);
-if ($company->companyName !== 'شركة تجريبية') {
+$company = $validator->validate(['client_type' => 'company', 'name' => 'تجاهل', 'company_name' => 'شركة تجريبية', 'national_id' => 'تجاهل', 'email' => 'info@example.com']);
+if ($company->companyName !== 'شركة تجريبية' || $company->name !== null || $company->nationalId !== null) {
     throw new RuntimeException('Company client validation failed.');
 }
 foreach ([
