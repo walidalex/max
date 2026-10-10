@@ -15,7 +15,9 @@ final class SubcontractService
     public function vendorsForWorkSection(int $sectionId):array{return $this->repository->vendorsForWorkSection($sectionId);}
     public function all():array{return $this->repository->all();}
     public function workspaceStats(int $id):array{$this->find($id);return $this->repository->workspaceStats($id);}
-    public function save(SubcontractData $data,?int $id=null):int
+    public function printScope(int $id):array{$this->find($id);return$this->repository->printScope($id);}
+    public function scopeTotal(int $id):string{$this->find($id);return$this->repository->scopeTotal($id);}
+    public function save(SubcontractData $data,?int $id=null,array $items=[]):int
     {
         $old=$id?$this->find($id):null;
         if(!$this->repository->project($data->projectId))throw new BusinessRuleException('المشروع غير موجود.');
@@ -23,11 +25,14 @@ final class SubcontractService
         $switch=$old===null||(int)$old['vendor_id']!==$data->vendorId;
         if(!$this->repository->vendor($data->vendorId,$switch))throw new BusinessRuleException('يجب اختيار مقاول باطن نشط.');
         if(!$this->repository->vendorInWorkSection($data->vendorId,$data->workSectionId))throw new BusinessRuleException('المقاول لا يعمل في مجال العمل المختار.');
-        if($data->number!==null&&$this->repository->numberExists($data,$id))throw new BusinessRuleException('رقم العقد مستخدم لهذا المشروع والمقاول.');
-        return $this->db->transaction(function()use($data,$id,$old){
-            if(!$id)return $this->repository->create($this->numbers->nextSubcontractCode((int)substr($data->contractDate,0,4)),$data);
-            $boq=$this->repository->boq($id);
-            if($boq&&$boq['status']==='approved'&&$data->value!==(string)$old['contract_value'])throw new BusinessRuleException('قيمة العقد محمية بجدول أعمال معتمد.');
+        return $this->db->transaction(function()use($data,$id,$old,$items){
+            if(!$id){
+                $year=(int)substr($data->contractDate,0,4);
+                $id=$this->repository->create($this->numbers->nextSubcontractCode($year),$data);
+                $sectionId=$this->repository->createScope($id,$data->workSectionId);
+                foreach($items as $index=>$item){$unit=$this->repository->unit($item->unitId)??throw new BusinessRuleException('الوحدة غير موجودة أو غير نشطة.');if(($unit['code']==='lump_sum')!==($item->pricingType==='lump_sum'))throw new BusinessRuleException('نوع تسعير البند لا يطابق الوحدة المختارة.');$this->repository->createScopeItem($sectionId,new \App\Modules\SubcontractBoq\DTOs\BoqItemData($sectionId,$item->description,$item->pricingType,$item->unitId,$item->quantity,$item->unitRate,$item->lumpSumAmount,$item->notes),$unit,$index+1);}
+                return $id;
+            }
             if($old['status']!=='draft')$this->assertLockedFields($old,$data);
             $this->repository->update($id,$data,$old['status']==='draft');
             return $id;
@@ -43,7 +48,7 @@ final class SubcontractService
     public function transitions(string $status):array{return self::TRANSITIONS[$status]??[];}
     private function assertLockedFields(array $old,SubcontractData $data):void
     {
-        foreach(['project_id'=>$data->projectId,'work_section_id'=>$data->workSectionId,'vendor_id'=>$data->vendorId,'subcontract_number'=>$data->number,'contract_value'=>$data->value,'contract_date'=>$data->contractDate,'title'=>$data->title,'description'=>$data->description]as$key=>$value)
+        foreach(['project_id'=>$data->projectId,'work_section_id'=>$data->workSectionId,'vendor_id'=>$data->vendorId,'contract_date'=>$data->contractDate,'title'=>$data->title,'description'=>$data->description]as$key=>$value)
             if(($old[$key]===null?null:(string)$old[$key])!==($value===null?null:(string)$value))throw new BusinessRuleException('لا يمكن تعديل البيانات التعاقدية بعد التفعيل.');
     }
 }

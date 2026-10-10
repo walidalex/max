@@ -33,10 +33,9 @@ $groups = [
     ['id'=>'master-data','label'=>'البيانات الأساسية','icon'=>'ti-database','items'=>[
         ['label'=>'العملاء','href'=>'/clients','icon'=>'ti-address-book','permission'=>'clients.view','patterns'=>['/clients']],
         ['label'=>'الموردون ومقاولو الباطن','href'=>'/vendors','icon'=>'ti-truck-delivery','permission'=>'vendors.view','patterns'=>['/vendors']],
-        ['label'=>'المشاريع','href'=>'/projects','icon'=>'ti-briefcase','permission'=>'projects.view','patterns'=>['/projects'],'excludes'=>['#^/projects/[^/]+/costs#']],
     ]],
-    ['id'=>'clients-contracts','label'=>'العملاء والعقود','icon'=>'ti-file-certificate','items'=>[
-        ['label'=>'عقود العملاء','href'=>'/contracts','icon'=>'ti-contract','permission'=>'client_contracts.view','patterns'=>['/contracts','/contract-variations']],
+    ['id'=>'clients-contracts','label'=>'المشاريع وعقود العملاء','icon'=>'ti-file-certificate','items'=>[
+        ['label'=>'المشاريع وعقود العملاء','href'=>'/project-contracts','icon'=>'ti-briefcase','permissions'=>['projects.view','client_contracts.view'],'patterns'=>['/project-contracts','/projects','/contracts','/contract-variations'],'excludes'=>['#^/projects/[^/]+/costs#']],
         ['label'=>'مستخلصات العملاء','href'=>'/client-progress-statements','icon'=>'ti-file-dollar','permission'=>'client_progress_statements.view','patterns'=>['/client-progress-statements'],'contains'=>['/progress-statements']],
         ['label'=>'سندات قبض العملاء','href'=>'/client-receipts','icon'=>'ti-receipt','permission'=>'client_receipts.view','patterns'=>['/client-receipts'],'contains'=>['/receipts']],
     ]],
@@ -71,7 +70,12 @@ $groups = [
     ]],
 ];
 foreach ($groups as &$group) {
-    $group['items'] = array_values(array_filter($group['items'], static fn (array $item): bool => $can($item['permission'])));
+    $group['items'] = array_values(array_filter($group['items'], static function (array $item) use ($can): bool {
+        if (isset($item['permissions'])) {
+            return array_any($item['permissions'], static fn (string $permission): bool => $can($permission));
+        }
+        return $can($item['permission']);
+    }));
 }
 unset($group);
 $groups = array_values(array_filter($groups, static fn (array $group): bool => $group['items'] !== []));

@@ -78,9 +78,9 @@ Users are never physically deleted. Access is revoked with `users.is_active`.
 
 ## Subcontracts
 
-- Projects may have multiple subcontractor agreements. Commercial numbers are unique only within project, vendor, and number while `NULL` may repeat.
+- Projects may have multiple subcontractor agreements. `subcontract_code` is the single system-generated business number and is not editable by users.
 - New agreements require an active vendor of type `subcontractor` or `both`; later vendor deactivation does not invalidate historical contracts.
-- Subcontract BOQ uses separate snapshot tables and generated DECIMAL totals. BOQ approval atomically synchronizes value only for BOQ-priced subcontracts.
+- Each subcontract has one scope section derived from its selected work section. The initial scope is created transactionally with the agreement; BOQ approval atomically synchronizes the generated DECIMAL total to the contract value.
 
 ## Subcontract progress certificates
 

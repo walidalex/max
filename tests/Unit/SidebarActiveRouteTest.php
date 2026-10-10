@@ -18,8 +18,8 @@ $renderSidebar = static function (string $uri): string {
 
 $variationSidebar = $renderSidebar('/contract-variations/15/edit');
 if (!str_contains($variationSidebar, 'class="collapse show" id="sidebar-clients-contracts"')
-    || preg_match('#class="nav-link active" href="/contracts"#', $variationSidebar) !== 1) {
-    throw new RuntimeException('Contract variation route did not activate Client Contracts.');
+    || preg_match('#class="nav-link active" href="/project-contracts"#', $variationSidebar) !== 1) {
+    throw new RuntimeException('Contract variation route did not activate Projects and Client Contracts.');
 }
 
 $projectCostsSidebar = $renderSidebar('/projects/42/costs/create');
@@ -28,4 +28,12 @@ if (!str_contains($projectCostsSidebar, 'class="collapse show" id="sidebar-costs
     || str_contains($projectCostsSidebar, 'class="collapse show" id="sidebar-master-data"')
     || preg_match('#class="nav-link active" href="/projects"#', $projectCostsSidebar) === 1) {
     throw new RuntimeException('Project costs route did not activate Project Actual Costs exclusively.');
+}
+
+$projectSidebar = $renderSidebar('/projects/42/edit');
+if (!str_contains($projectSidebar, 'class="collapse show" id="sidebar-clients-contracts"')
+    || preg_match('#class="nav-link active" href="/project-contracts"#', $projectSidebar) !== 1
+    || str_contains($projectSidebar, 'href="/projects"')
+    || str_contains($projectSidebar, 'href="/contracts"')) {
+    throw new RuntimeException('Project route did not activate the unified Project and Contract directory.');
 }
