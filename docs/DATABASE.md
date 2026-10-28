@@ -1,5 +1,18 @@
 # Database
 
+Cost Plus client statement snapshots in the existing `cost_scope_snapshot` JSON
+now include `previous_subcontract_cost`, `current_subcontract_cost`, and
+`cumulative_subcontract_cost` on subcontract rows. Values derive from approved
+certificate snapshots, with prior billed execution deducted. Lump-sum subcontract
+rows use stable `subcontract:<id>` keys, distinct from numeric BOQ/cost-code keys.
+No schema change or historical rewrite is required.
+
+Migration `127_classify_project_expense_input.sql` adds nullable `expense_type` (`general` / `work`) to PAC. Work costs use their existing cost-code/work-section relationship for client statement grouping. Existing scope links and frozen reports are retained as legacy history; no amounts or classifications are backfilled.
+
+Migrations `125_link_actual_costs_to_subcontract_scope.sql` and `126_add_cost_plus_scope_snapshot.sql` add optional scope-item attribution to PAC with a restrictive FK and JSON-validated scope metadata, and an immutable-at-approval JSON scope breakdown on Cost Plus client statements. Existing data remains unclassified; no amounts or history are rewritten.
+
+Migration `124_add_subcontract_certificate_print_snapshot.sql` adds nullable JSON-validated `print_snapshot` to `subcontract_progress_certificates`. New approvals freeze report identity, posted payments and financial summary in the same transaction. Older approvals remain NULL and are labelled as current payment views when printed.
+
 - Engine: MySQL 8+ or MariaDB 10.11+
 - Encoding: `utf8mb4`
 - Access: object-oriented MySQLi

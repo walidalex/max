@@ -4,11 +4,27 @@ namespace App\Modules\ProjectCosts\Validators;
 use App\Core\Exceptions\ValidationException;use App\Core\Validation\Validator;use App\Modules\ProjectCosts\DTOs\ProjectCostData;
 final class ProjectCostValidator{public function __construct(private readonly Validator $validator){}
  public function validate(array $input):ProjectCostData{
-  if(!$this->validator->validate($input,['project_id'=>'required','cost_date'=>'required|string|max:10','cost_code_id'=>'required','description'=>'required|string|max:500','amount'=>'required|string|max:21','reference_number'=>'string|max:190','notes'=>'string|max:5000']))throw new ValidationException($this->validator->errors());
+  $expenseType=$input['expense_type']??null;
+  if($expenseType!==null&&!in_array($expenseType,['general','work'],true))throw new ValidationException(['expense_type'=>['نوع المصروف غير صالح.']]);
+  if($expenseType!==null)$input['description']='';
+  if(!$this->validator->validate($input,['project_id'=>'required','cost_date'=>'required|string|max:10','cost_code_id'=>'required','description'=>($expenseType===null?'required|':'').'string|max:500','amount'=>'required|string|max:21','reference_number'=>'string|max:190','notes'=>'string|max:5000']))throw new ValidationException($this->validator->errors());
   $errors=[];$date=trim((string)($input['cost_date']??''));$amount=trim((string)($input['amount']??''));$project=(int)($input['project_id']??0);$code=(int)($input['cost_code_id']??0);
   $parsed=\DateTimeImmutable::createFromFormat('!Y-m-d',$date);if(!$parsed||$parsed->format('Y-m-d')!==$date)$errors['cost_date'][]='تاريخ التكلفة غير صالح.';
   if(!preg_match('/^\d{1,16}(?:\.\d{1,2})?$/',$amount)||preg_match('/^0+(?:\.0{1,2})?$/',$amount))$errors['amount'][]='يجب أن يكون المبلغ أكبر من صفر.';
   if($project<1)$errors['project_id'][]='المشروع مطلوب.';if($code<1)$errors['cost_code_id'][]='كود التكلفة مطلوب.';if($errors)throw new ValidationException($errors);
   $nullable=static fn(mixed $v):?string=>trim((string)$v)===''?null:trim((string)$v);
-  return new ProjectCostData($project,$date,$code,(int)($input['vendor_id']??0)?:null,trim((string)$input['description']),$nullable($input['reference_number']??''),$amount,$nullable($input['notes']??''));
+  if($expenseType!==null){
+   $section=$expenseType==='work'?filter_var($input['cost_section_id']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]):null;
+   if($section===false)throw new ValidationException(['cost_section_id'=>['اختر كود التكلفة الرئيسي.']]);
+   return new ProjectCostData($project,$date,$code,(int)($input['vendor_id']??0)?:null,'',$nullable($input['reference_number']??''),$amount,$nullable($input['notes']??''),null,$section,$expenseType);
+  }
+  $item=$section=null;
+  foreach(['subcontract_boq_item_id','scope_work_section_id'] as $field){
+   $raw=$input[$field]??'';if($raw==='')continue;
+   $parsed=filter_var($raw,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+   if($parsed===false)throw new ValidationException([$field=>['البند المختار غير صالح.']]);
+   if($field==='subcontract_boq_item_id')$item=$parsed;else $section=$parsed;
+  }
+  if(($item===null)!==($section===null))throw new ValidationException(['subcontract_boq_item_id'=>['اختر البند الرئيسي والبند الفرعي معًا، أو اختر مصروفًا عامًا.']]);
+  return new ProjectCostData($project,$date,$code,(int)($input['vendor_id']??0)?:null,trim((string)$input['description']),$nullable($input['reference_number']??''),$amount,$nullable($input['notes']??''),$item,$section);
  }}

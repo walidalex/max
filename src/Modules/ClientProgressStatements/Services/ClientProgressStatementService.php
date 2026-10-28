@@ -8,6 +8,7 @@ use App\Modules\ClientProgressStatements\Calculators\CostPlusStatementCalculator
 use App\Modules\ClientProgressStatements\Calculators\BoqStatementCalculator;
 use App\Modules\ClientProgressStatements\DTOs\ClientProgressStatementData;
 use App\Modules\ClientProgressStatements\DTOs\ClientProgressStatementTableQuery;
+use App\Modules\ClientProgressStatements\DTOs\StatementContractSelectionData;
 use App\Modules\ClientProgressStatements\Repositories\ClientProgressStatementRepository;
 use App\Shared\Numbering\NumberGeneratorService;
 final class ClientProgressStatementService
@@ -24,6 +25,7 @@ final class ClientProgressStatementService
         private readonly NumberGeneratorService $numbers,
         private readonly Database $db,
         private readonly Auth $auth,
+        private readonly CostPlusScopeService $costScope,
     ) {}
     public function contract(int $id): array
     {
@@ -34,6 +36,29 @@ final class ClientProgressStatementService
     {
         return $this->statements->find($id) ??
             throw new BusinessRuleException("مستخلص العميل غير موجود.");
+    }
+    public function creationContracts(): array
+    {
+        return $this->statements->creationContracts(self::ELIGIBLE_CONTRACT_STATUSES);
+    }
+
+    public function creationContract(int $id): array
+    {
+        $contract = $this->contract($id);
+        $this->assertContract($contract);
+        if ($contract['pricing_method'] === 'boq' && $this->statements->approvedBoq($id) === null) {
+            throw new BusinessRuleException('يجب اعتماد جدول كميات عقد العميل قبل إنشاء المستخلص.');
+        }
+        return $contract;
+    }
+
+    public function selectCreationContract(StatementContractSelectionData $selection): int
+    {
+        $contract = $this->creationContract($selection->contractId);
+        if ((int)$contract['project_id'] !== $selection->projectId) {
+            throw new BusinessRuleException('العقد المحدد لا يتبع المشروع المختار.');
+        }
+        return (int)$contract['id'];
     }
     public function save(
         int $contractId,
@@ -199,6 +224,8 @@ final class ClientProgressStatementService
                 if (
                     $x === null ||
                     $x["status"] !== "approved" ||
+                    $x['subcontract_boq_item_id'] !== null ||
+                    in_array($x['source_type'],['subcontract_certificate','subcontract_payment'],true) ||
                     (int) $x["project_id"] !== (int) $contract["project_id"] ||
                     (string) $x["cost_date"] >
                         (string) $statement["statement_date"]
@@ -247,10 +274,12 @@ final class ClientProgressStatementService
                     );
                 }
             }
+            $scopeRows=$this->costScope->rows($contract,(string)$statement['statement_date'],$id,null,true);
             $calculation = $this->calculator->calculate(
                 $id,
                 (string) $contract["markup_percentage"],
                 $latest,
+                $this->costScope->subcontractTotal($scopeRows),
             );
             if (
                 $this->statements->decimalCompare(
@@ -276,6 +305,7 @@ final class ClientProgressStatementService
                     (string) $v["previous_billed_amount"],
                 );
             }
+            $this->costScope->freezeRows($id,$scopeRows);
             $this->statements->approve(
                 $id,
                 $this->statements->nextSequence((int) $contract["id"]),
@@ -358,6 +388,9 @@ final class ClientProgressStatementService
             "costs" => $this->statements->costs($id),
             "boqItems" => $this->statements->boqItems($id),
             "variations" => $this->statements->variations($id),
+            "scopeRows" => ($s['pricing_method_snapshot']??$s['pricing_method'])==='cost_plus'
+                ? ($s['status']==='approved'&&$s['cost_scope_snapshot']===null?[]:$this->costScope->rows($this->contract((int)$s['client_contract_id']),(string)$s['statement_date'],$id,$s['cost_scope_snapshot']))
+                : [],
         ];
     }
     public function getEligibleActualCostsForContract(
@@ -419,6 +452,10 @@ final class ClientProgressStatementService
     public function references(): array
     {
         return $this->statements->references();
+    }
+    public function scopeRows(int $contractId,string $date,?int $statementId=null):array
+    {
+        return $this->costScope->rows($this->contract($contractId),$date,$statementId);
     }
     public function dataTable(ClientProgressStatementTableQuery $q): array
     {

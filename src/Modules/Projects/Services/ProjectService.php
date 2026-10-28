@@ -12,7 +12,7 @@ final class ProjectService
  public function allowedTransitions(string $status):array{return self::TRANSITIONS[$status]??[];}
  public function referenceData():array{return ['clients'=>$this->projects->clients(),'managers'=>$this->projects->managers()];}
  public function contacts(int $clientId):array{if(!$this->projects->clientExists($clientId))throw new BusinessRuleException('العميل غير موجود.');return $this->projects->contacts($clientId);}
- public function dataTable(ProjectTableQuery $q):array{$r=$this->projects->dataTable($q);return ['draw'=>$q->draw,'recordsTotal'=>$r['recordsTotal'],'recordsFiltered'=>$r['recordsFiltered'],'data'=>$r['rows']];}
+ public function dataTable(ProjectTableQuery $q,bool $searchContracts=false):array{$r=$this->projects->dataTable($q,$searchContracts);return ['draw'=>$q->draw,'recordsTotal'=>$r['recordsTotal'],'recordsFiltered'=>$r['recordsFiltered'],'data'=>$r['rows']];}
  private function relations(ProjectData $d):void
  {
   if(!$this->projects->clientExists($d->clientId))throw new BusinessRuleException('العميل المحدد غير موجود.');

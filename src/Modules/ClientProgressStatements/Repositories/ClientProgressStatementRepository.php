@@ -149,14 +149,14 @@ final class ClientProgressStatementRepository
     public function eligibleCosts(int $id): array
     {
         return $this->rows(
-            "SELECT x.id,x.cost_entry_code,x.cost_date,x.description,x.reference_number,x.amount,x.work_section_code_snapshot section_code,x.work_section_name_snapshot section_name,x.cost_code_snapshot cost_code,x.cost_code_name_snapshot cost_code_name,v.name vendor_name,EXISTS(SELECT 1 FROM client_progress_statement_costs own WHERE own.statement_id=s.id AND own.project_actual_cost_id=x.id) selected FROM client_progress_statements s JOIN project_actual_costs x ON x.project_id=s.project_id AND x.status='approved' AND x.cost_date<=s.statement_date LEFT JOIN vendors v ON v.id=x.vendor_id WHERE s.id=? AND NOT EXISTS(SELECT 1 FROM client_progress_statement_costs used WHERE used.project_actual_cost_id=x.id AND used.is_committed=1 AND used.statement_id<>s.id) ORDER BY x.cost_date,x.id",
+"SELECT x.id,x.subcontract_boq_item_id,x.expense_type,x.cost_code_id,x.cost_entry_code,x.cost_date,x.description,x.reference_number,x.amount,x.work_section_code_snapshot section_code,x.work_section_name_snapshot section_name,x.cost_code_snapshot cost_code,x.cost_code_name_snapshot cost_code_name,v.name vendor_name,EXISTS(SELECT 1 FROM client_progress_statement_costs own WHERE own.statement_id=s.id AND own.project_actual_cost_id=x.id) selected FROM client_progress_statements s JOIN project_actual_costs x ON x.project_id=s.project_id AND x.status='approved' AND x.cost_date<=s.statement_date LEFT JOIN vendors v ON v.id=x.vendor_id WHERE s.id=? AND x.subcontract_boq_item_id IS NULL AND x.source_type NOT IN('subcontract_certificate','subcontract_payment') AND NOT EXISTS(SELECT 1 FROM client_progress_statement_costs used WHERE used.project_actual_cost_id=x.id AND used.is_committed=1 AND used.statement_id<>s.id) ORDER BY x.cost_date,x.id",
             [$id],
         );
     }
     public function eligibleCostsForContract(int $id, string $date): array
     {
         return $this->rows(
-            "SELECT x.id,x.cost_entry_code,x.cost_date,x.description,x.reference_number,x.amount,x.work_section_code_snapshot section_code,x.work_section_name_snapshot section_name,x.cost_code_snapshot cost_code,x.cost_code_name_snapshot cost_code_name,v.name vendor_name,0 selected FROM client_contracts c JOIN project_actual_costs x ON x.project_id=c.project_id AND x.status='approved' AND x.cost_date<=? LEFT JOIN vendors v ON v.id=x.vendor_id WHERE c.id=? AND NOT EXISTS(SELECT 1 FROM client_progress_statement_costs used WHERE used.project_actual_cost_id=x.id AND used.is_committed=1) ORDER BY x.cost_date,x.id",
+            "SELECT x.id,x.subcontract_boq_item_id,x.expense_type,x.cost_code_id,x.cost_entry_code,x.cost_date,x.description,x.reference_number,x.amount,x.work_section_code_snapshot section_code,x.work_section_name_snapshot section_name,x.cost_code_snapshot cost_code,x.cost_code_name_snapshot cost_code_name,v.name vendor_name,0 selected FROM client_contracts c JOIN project_actual_costs x ON x.project_id=c.project_id AND x.status='approved' AND x.cost_date<=? LEFT JOIN vendors v ON v.id=x.vendor_id WHERE c.id=? AND x.subcontract_boq_item_id IS NULL AND x.source_type NOT IN('subcontract_certificate','subcontract_payment') AND NOT EXISTS(SELECT 1 FROM client_progress_statement_costs used WHERE used.project_actual_cost_id=x.id AND used.is_committed=1) ORDER BY x.cost_date,x.id",
             [$date, $id],
         );
     }
@@ -372,6 +372,17 @@ final class ClientProgressStatementRepository
             [$id],
         )["total"] ?? "0.00");
     }
+    public function creationContracts(array $statuses): array
+    {
+        return $this->rows(
+            "SELECT cc.id,cc.contract_code,cc.contract_number,cc.title,cc.project_id,cc.pricing_method,p.project_code,p.name project_name,COALESCE(c.company_name,c.name) client_name
+             FROM client_contracts cc JOIN projects p ON p.id=cc.project_id JOIN clients c ON c.id=cc.client_id
+             WHERE cc.status IN(?,?,?) AND ((cc.pricing_method='cost_plus' AND cc.markup_percentage IS NOT NULL) OR (cc.pricing_method='boq' AND EXISTS(SELECT 1 FROM contract_boqs b WHERE b.client_contract_id=cc.id AND b.status='approved')))
+             ORDER BY p.project_code,cc.contract_code",
+            $statuses,
+        );
+    }
+
     public function references(): array
     {
         return [

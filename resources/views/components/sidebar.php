@@ -48,7 +48,8 @@ $groups = [
         ['label'=>'التكاليف الفعلية للمشاريع','href'=>'/project-costs','icon'=>'ti-cash','permission'=>'project_costs.view','patterns'=>['/project-costs'],'matches'=>['#^/projects/[^/]+/costs#']],
     ]],
     ['id'=>'subcontractors','label'=>'مقاولو الباطن','icon'=>'ti-building-factory-2','items'=>[
-        ['label'=>'عقود مقاولي الباطن','href'=>'/subcontracts','icon'=>'ti-file-invoice','permission'=>'subcontracts.view','patterns'=>['/subcontracts','/subcontract-certificates','/subcontract-payments']],
+        ['label'=>'عقود مقاولي الباطن','href'=>'/subcontracts','icon'=>'ti-file-invoice','permission'=>'subcontracts.view','patterns'=>['/subcontracts','/subcontract-certificates'],'excludes'=>['#^/subcontracts/[^/]+/payments(?:/|$)#']],
+        ['label'=>'دفعات مقاولي الباطن','href'=>'/subcontract-payments','icon'=>'ti-cash-banknote','permission'=>'subcontract_payments.view','patterns'=>['/subcontract-payments'],'matches'=>['#^/subcontracts/[^/]+/payments(?:/|$)#']],
     ]],
     ['id'=>'accounting','label'=>'المحاسبة','icon'=>'ti-calculator','items'=>[
         ['label'=>'دليل الحسابات','href'=>'/accounting/accounts','icon'=>'ti-list-tree','permission'=>'accounts.view','patterns'=>['/accounting/accounts']],

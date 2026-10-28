@@ -1,6 +1,7 @@
 'use strict';
 document.addEventListener('DOMContentLoaded',()=>{
  const client=document.getElementById('client_id'),contact=document.getElementById('primary_contact_id');if(!client||!contact)return;
+ if(document.getElementById('project-contract-wizard')){initializeQuickClient(client);return;}
  client.addEventListener('change',async()=>{
   const select=contact.tomselect;select?.clear();select?.clearOptions();select?.addOption({value:'',text:'بدون'});select?.disable();
   if(!client.value){select?.enable();return;}

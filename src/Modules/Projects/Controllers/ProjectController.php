@@ -26,5 +26,5 @@ final class ProjectController
   try{$input=$r->all();$input['status']=$id===null?'planning':(string)$this->projects->find($id)['status'];$id=$this->projects->save($this->validator->validate($input),$id);$this->flash('success','تم الحفظ','تم حفظ بيانات المشروع.');return Response::redirect("/projects/{$id}");}
   catch(ValidationException|BusinessRuleException $e){$message=$e instanceof ValidationException?(string)reset($e->errors[array_key_first($e->errors)]):$e->getMessage();$this->flash('error','تعذر الحفظ',$message);return Response::redirect($id===null?'/projects/create':"/projects/{$id}/edit");}
  }
- private function flash(string $type,string $title,string $text):void{$this->session->flash('alert',compact('type','title','text'));}
+ private function flash(string $type,string $title,string $text):void{$this->session->flash('alert',[...compact('type','title','text'),'timer'=>$type==='success'&&$title==='تم الحفظ'?4000:null]);}
 }

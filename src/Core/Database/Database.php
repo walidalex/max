@@ -10,6 +10,7 @@ use mysqli_sql_exception;
 final class Database
 {
     private ?mysqli $connection = null;
+    private int $transactionDepth = 0;
 
     /** @param array<string, mixed> $config */
     public function __construct(private readonly array $config) {}
@@ -59,14 +60,32 @@ final class Database
     public function transaction(callable $callback): mixed
     {
         $connection = $this->connection();
-        $connection->begin_transaction();
+        $depth = $this->transactionDepth;
+        $savepoint = 'app_transaction_' . $depth;
+        if ($depth === 0) {
+            $connection->begin_transaction();
+        } else {
+            $connection->query('SAVEPOINT ' . $savepoint);
+        }
+        ++$this->transactionDepth;
         try {
             $result = $callback($this);
-            $connection->commit();
+            if ($depth === 0) {
+                $connection->commit();
+            } else {
+                $connection->query('RELEASE SAVEPOINT ' . $savepoint);
+            }
             return $result;
         } catch (\Throwable $exception) {
-            $connection->rollback();
+            if ($depth === 0) {
+                $connection->rollback();
+            } else {
+                $connection->query('ROLLBACK TO SAVEPOINT ' . $savepoint);
+                $connection->query('RELEASE SAVEPOINT ' . $savepoint);
+            }
             throw $exception;
+        } finally {
+            $this->transactionDepth = $depth;
         }
     }
 }

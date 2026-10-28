@@ -2,7 +2,8 @@
 
 window.AppSelect = {
     init(root = document) {
-        root.querySelectorAll('.js-tom-select:not([data-tom-select-ready])').forEach((element) => {
+        root.querySelectorAll('select.js-tom-select:not([data-tom-select-ready]), input.js-tom-select:not([data-tom-select-ready])').forEach((element) => {
+            if (element.tomselect) { return; }
             element.dataset.tomSelectReady = 'true';
             new window.TomSelect(element, {
                 direction: 'rtl',

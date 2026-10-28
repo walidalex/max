@@ -47,6 +47,12 @@ final class SubcontractCertificateRepository
     }
 
     /** @param array<int, string> $quantities */
+    public function quantityFromCumulativePercentage(string $contractQuantity, string $percentage, string $previous): ?string
+    {
+        $row = $this->one('SELECT current_quantity FROM (SELECT ROUND(CAST(? AS DECIMAL(18,4))*CAST(? AS DECIMAL(7,4))/100,4)-CAST(? AS DECIMAL(18,4)) current_quantity) converted WHERE current_quantity>=0', [$contractQuantity, $percentage, $previous]);
+        return $row === null ? null : (string) $row['current_quantity'];
+    }
+
     public function updateQuantities(int $certificateId, array $quantities): void
     {
         foreach ($quantities as $boqItemId => $quantity) {
@@ -182,5 +188,45 @@ final class SubcontractCertificateRepository
         $result = $this->db->execute($sql, $params);
         $row = $result instanceof \mysqli_result ? $result->fetch_assoc() : null;
         return is_array($row) ? $row : null;
+    }
+
+    public function printIdentity(int $subcontractId): array
+    {
+        return $this->one('SELECT s.subcontract_code,s.title,s.contract_date,s.contract_value,p.project_code,p.name project_name,COALESCE(c.company_name,c.name) client_name,v.vendor_code,v.name vendor_name,w.name work_section_name FROM subcontracts s JOIN projects p ON p.id=s.project_id JOIN clients c ON c.id=p.client_id JOIN vendors v ON v.id=s.vendor_id LEFT JOIN work_sections w ON w.id=s.work_section_id WHERE s.id=?', [$subcontractId]) ?? [];
+    }
+
+    public function printPayments(int $subcontractId): array
+    {
+        $result=$this->db->execute("SELECT payment_code,payment_date,amount,payment_method,reference_number,notes FROM subcontract_payments WHERE subcontract_id=? AND status='posted' ORDER BY posted_at,id",[$subcontractId]);
+        return $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    public function printTotals(int $id): array
+    {
+        return $this->one("SELECT t.*,CAST(cumulative_value-paid_total AS DECIMAL(18,2)) balance FROM (SELECT CASE WHEN c.status<>'draft' THEN c.previous_earned_value WHEN s.pricing_method='boq' THEN COALESCE(b.previous_value,0) ELSE ROUND(COALESCE(h.progress,0)*s.contract_value/100,2) END previous_value,CASE WHEN c.status<>'draft' THEN c.current_earned_value WHEN s.pricing_method='boq' THEN COALESCE(b.current_value,0) ELSE ROUND(c.current_progress_percentage*s.contract_value/100,2) END current_value,CASE WHEN c.status<>'draft' THEN c.cumulative_earned_value WHEN s.pricing_method='boq' THEN COALESCE(b.previous_value,0)+COALESCE(b.current_value,0) ELSE ROUND((COALESCE(h.progress,0)+c.current_progress_percentage)*s.contract_value/100,2) END cumulative_value,COALESCE(py.total,0) paid_total FROM subcontract_progress_certificates c JOIN subcontracts s ON s.id=c.subcontract_id LEFT JOIN (SELECT i.certificate_id,SUM(ROUND(CASE WHEN i.pricing_type_snapshot='lump_sum' THEN COALESCE(prev.measure,0)*i.lump_sum_amount_snapshot/100 ELSE COALESCE(prev.measure,0)*i.unit_rate END,2)) previous_value,SUM(ROUND(CASE WHEN i.pricing_type_snapshot='lump_sum' THEN i.current_progress_percentage*i.lump_sum_amount_snapshot/100 ELSE i.current_quantity*i.unit_rate END,2)) current_value FROM subcontract_progress_items i LEFT JOIN (SELECT i2.subcontract_boq_item_id,SUM(CASE WHEN i2.pricing_type_snapshot='lump_sum' THEN i2.current_progress_percentage ELSE i2.current_quantity END) measure FROM subcontract_progress_items i2 JOIN subcontract_progress_certificates c2 ON c2.id=i2.certificate_id WHERE c2.status='approved' AND c2.id<>? GROUP BY i2.subcontract_boq_item_id) prev ON prev.subcontract_boq_item_id=i.subcontract_boq_item_id GROUP BY i.certificate_id) b ON b.certificate_id=c.id LEFT JOIN (SELECT subcontract_id,SUM(current_progress_percentage) progress FROM subcontract_progress_certificates WHERE status='approved' AND id<>? GROUP BY subcontract_id) h ON h.subcontract_id=s.id LEFT JOIN (SELECT subcontract_id,SUM(amount) total FROM subcontract_payments WHERE status='posted' GROUP BY subcontract_id) py ON py.subcontract_id=s.id WHERE c.id=?) t",[$id,$id,$id]) ?? [];
+    }
+
+    public function printItems(int $id): array
+    {
+        $certificate=$this->find($id);
+        $draft=$certificate['status']==='draft';
+        $items=$this->items($id);
+        foreach($items as &$item){
+            $lump=$item['pricing_type_snapshot']==='lump_sum';
+            $item['print_previous']=$draft?$item['live_previous_quantity']:($lump?$item['previous_progress_percentage']:$item['previous_quantity']);
+            $item['print_current']=$lump?$item['current_progress_percentage']:$item['current_quantity'];
+            $item['print_cumulative']=$draft?$item['live_cumulative_quantity']:($lump?$item['cumulative_progress_percentage']:$item['cumulative_quantity']);
+            $values=$this->one('SELECT ROUND(CAST(? AS DECIMAL(18,4))*100/NULLIF(CAST(? AS DECIMAL(18,4)),0),4) progress,CAST(? AS DECIMAL(18,2))-CAST(? AS DECIMAL(18,2)) previous_amount,ROUND(CAST(? AS DECIMAL(18,4))*CAST(? AS DECIMAL(18,2)),2) contract_amount',[(string)($item['print_cumulative']??'0'),$lump?'100':(string)$item['contract_quantity'],(string)($draft?$item['live_cumulative_amount']:($item['cumulative_amount']??'0')),(string)($draft?$item['live_current_amount']:($item['current_amount']??'0')),$lump?'1':(string)$item['contract_quantity'],(string)($lump?$item['lump_sum_amount_snapshot']:$item['unit_rate'])]);
+            $item['print_progress']=$values['progress']??'0.0000';
+            $item['print_previous_amount']=$values['previous_amount']??'0.00';
+            $item['contract_amount']=$values['contract_amount']??'0.00';
+        }
+        unset($item);
+        return $items;
+    }
+
+    public function savePrintSnapshot(int $id, array $snapshot): void
+    {
+        $this->db->execute("UPDATE subcontract_progress_certificates SET print_snapshot=? WHERE id=? AND status='approved' AND print_snapshot IS NULL",[json_encode($snapshot,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),$id]);
     }
 }

@@ -16,5 +16,6 @@ final readonly class SubcontractCertificateData
         public ?string $currentProgressPercentage,
         public array $quantities,
         public ?string $notes,
+        public array $quantityModes = [],
     ) {}
 }

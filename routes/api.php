@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+$app->router()->get('/api/client-contracts/{contract_id}/progress-statements/preview',[App\Modules\ClientProgressStatements\Controllers\ClientProgressStatementController::class,'preview'],['auth']);
+
 use App\Modules\Foundation\Controllers\FoundationController;
 use App\Modules\Clients\Controllers\ClientDataTableController;
 use App\Modules\Vendors\Controllers\VendorDataTableController;
@@ -28,6 +30,7 @@ $app->router()->get('/api/contracts/client-contacts',[ClientContractReferenceDat
 $app->router()->get('/api/contracts/{contract_id}/variations',[ContractVariationDataTableController::class,'index'],['auth','permission:contract_variations.view']);
 $app->router()->get('/api/subcontracts/{subcontract_id}/certificates',[SubcontractCertificateDataTableController::class,'index'],['auth','permission:subcontract_certificates.view']);
 $app->router()->get('/api/subcontracts/{subcontract_id}/payments',[SubcontractPaymentDataTableController::class,'index'],['auth','permission:subcontract_payments.view']);
+$app->router()->get('/api/subcontract-payments',[SubcontractPaymentDataTableController::class,'all'],['auth','permission:subcontract_payments.view']);
 $app->router()->get('/api/client-progress-statements',[ClientProgressStatementDataTableController::class,'global'],['auth','permission:client_progress_statements.view']);
 $app->router()->get('/api/client-contracts/{contract_id}/progress-statements',[ClientProgressStatementDataTableController::class,'contract'],['auth','permission:client_progress_statements.view']);
 $app->router()->get('/api/client-progress-statements/{id}/eligible-costs',[ClientProgressStatementSelectionController::class,'costs'],['auth','permission:client_progress_statements.edit']);

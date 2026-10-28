@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
             {data: 'cumulative_earned_value', render: value => escape(value ?? '—')},
             {data: 'progress_percentage', render: value => `${escape(value ?? '0')}%`},
             {data: 'status', render: value => `<span class="badge bg-blue-lt">${statuses[value] || escape(value)}</span>`},
-            {data: null, orderable: false, searchable: false, render: row => `<a class="btn btn-sm" href="/subcontract-certificates/${Number(row.id)}">عرض</a>`},
+            {data: null, orderable: false, searchable: false, render: row => `<div class="btn-list flex-nowrap"><a class="btn btn-sm" href="/subcontract-certificates/${Number(row.id)}">عرض</a><a class="btn btn-sm btn-icon" href="/subcontract-certificates/${Number(row.id)}/print" target="_blank" rel="noopener" title="طباعة المستخلص" aria-label="طباعة المستخلص"><i class="ti ti-printer" aria-hidden="true"></i></a></div>`},
         ],
     });
     document.getElementById('certificate-status-filter').addEventListener('change', () => table.ajax.reload());

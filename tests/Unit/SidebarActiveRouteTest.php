@@ -9,6 +9,8 @@ $renderSidebar = static function (string $uri): string {
         'projects.view',
         'project_costs.view',
         'client_contracts.view',
+        'subcontracts.view',
+        'subcontract_payments.view',
     ], true);
 
     ob_start();
@@ -36,4 +38,13 @@ if (!str_contains($projectSidebar, 'class="collapse show" id="sidebar-clients-co
     || str_contains($projectSidebar, 'href="/projects"')
     || str_contains($projectSidebar, 'href="/contracts"')) {
     throw new RuntimeException('Project route did not activate the unified Project and Contract directory.');
+}
+
+foreach (['/subcontract-payments', '/subcontract-payments/5', '/subcontracts/7/payments/create'] as $uri) {
+    $sidebar = $renderSidebar($uri);
+    if (!str_contains($sidebar, 'class="collapse show" id="sidebar-subcontractors"')
+        || !str_contains($sidebar, 'class="nav-link active" href="/subcontract-payments"')
+        || str_contains($sidebar, 'class="nav-link active" href="/subcontracts"')) {
+        throw new RuntimeException('Payment navigation did not activate exclusively.');
+    }
 }

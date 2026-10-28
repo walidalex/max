@@ -26,12 +26,18 @@ final class SubcontractCertificateValidator
 
         $percentage = null;
         $quantities = [];
+        $modes = [];
         if ($pricingMethod === 'lump_sum') {
             $percentage = $this->decimal($input['current_progress_percentage'] ?? null, 4);
             if ($percentage === null) $errors['current_progress_percentage'][] = 'نسبة التقدم الحالية مطلوبة وغير سالبة.';
             elseif ($this->exceedsOneHundred($percentage)) $errors['current_progress_percentage'][] = 'نسبة التقدم الحالية لا تتجاوز 100٪.';
         } else {
-            foreach (($input['quantities'] ?? []) as $itemId => $value) {
+            $submitted = $input['quantities'] ?? [];
+            $submittedModes = $input['quantity_modes'] ?? [];
+            if (!is_array($submitted) || !is_array($submittedModes)) {
+                throw new ValidationException(['quantities' => ['بيانات التنفيذ الحالية غير صالحة.']]);
+            }
+            foreach ($submitted as $itemId => $value) {
                 $id = filter_var($itemId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
                 $quantity = $this->decimal($value, 4);
                 if ($id === false || $quantity === null) {
@@ -39,6 +45,11 @@ final class SubcontractCertificateValidator
                     continue;
                 }
                 $quantities[(int) $id] = $quantity;
+                $mode = $submittedModes[$itemId] ?? 'quantity';
+                if (!in_array($mode, ['quantity', 'percentage'], true) || ($mode === 'percentage' && $this->exceedsOneHundred($quantity))) {
+                    $errors['quantities'][] = 'طريقة الإدخال أو نسبة التنفيذ غير صالحة.';
+                }
+                $modes[(int) $id] = $mode;
             }
         }
 
@@ -52,6 +63,7 @@ final class SubcontractCertificateValidator
             $percentage,
             $quantities,
             $notes,
+            $modes,
         );
     }
 

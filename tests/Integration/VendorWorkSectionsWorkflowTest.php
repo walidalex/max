@@ -13,13 +13,13 @@ $sectionResult = $database->execute('SELECT id FROM work_sections WHERE is_activ
 $section = $sectionResult instanceof mysqli_result ? $sectionResult->fetch_assoc() : null;
 if (!is_array($section)) { throw new RuntimeException('An active work section is required for the vendor workflow test.'); }
 $sectionId = (int) $section['id'];
-$vendorId = $service->save(new VendorData('subcontractor', 'اختبار مجالات المورد', null, null, null, null, null, null, null, [$sectionId]));
+$vendorId = $service->save(new VendorData('subcontractor', 'اختبار مجالات المورد', null, null, null, null, null, null, null, null, null, null, [$sectionId]));
 try {
     $links = $database->execute('SELECT work_section_id FROM vendor_work_sections WHERE vendor_id = ?', [$vendorId]);
     if (!($links instanceof mysqli_result) || $links->num_rows !== 1 || (int) $links->fetch_assoc()['work_section_id'] !== $sectionId) {
         throw new RuntimeException('Vendor work sections were not saved atomically.');
     }
-    $service->save(new VendorData('supplier', 'اختبار مجالات المورد', null, null, null, null, null, null, null, []), $vendorId);
+    $service->save(new VendorData('supplier', 'اختبار مجالات المورد', null, null, null, null, null, null, null, null, null, null, []), $vendorId);
     $links = $database->execute('SELECT COUNT(*) AS total FROM vendor_work_sections WHERE vendor_id = ?', [$vendorId]);
     if (!($links instanceof mysqli_result) || (int) $links->fetch_assoc()['total'] !== 0) {
         throw new RuntimeException('Vendor work sections were not synchronized on update.');

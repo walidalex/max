@@ -6,6 +6,8 @@ window.AppAlert = {
             icon: options.type || 'info',
             title: options.title || '',
             text: options.text || '',
+            timer: options.timer || undefined,
+            timerProgressBar: Boolean(options.timer),
             confirmButtonText: options.confirmButtonText || 'حسنًا',
             reverseButtons: true,
         });

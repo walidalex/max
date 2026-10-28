@@ -29,7 +29,7 @@ final class ProjectContractDirectoryController
         }
 
         $projectReferences = $canViewProjects ? $this->projects->referenceData() : ['clients' => [], 'managers' => []];
-        $contractReferences = $canViewContracts ? $this->contracts->filterReferences() : ['projects' => [], 'clients' => []];
+        $contractReferences = $canViewContracts && !$canViewProjects ? $this->contracts->filterReferences() : ['projects' => [], 'clients' => []];
 
         return Response::html($this->view->render('modules/project-contracts/index', [
             'title' => 'المشاريع وعقود العملاء',

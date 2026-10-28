@@ -9,8 +9,13 @@ $validator = new SubcontractCertificateValidator();
 $lump = $validator->validate(['certificate_date' => '2026-09-14', 'certificate_number' => 'MANUAL-NUMBER', 'current_progress_percentage' => '5.25'], 7, 'lump_sum');
 if ($lump->currentProgressPercentage !== '5.2500' || $lump->quantities !== [] || $lump->certificateNumber !== null) throw new RuntimeException('Lump-sum certificate validation failed.');
 $boq = $validator->validate(['certificate_date' => '2026-09-14', 'quantities' => ['9' => '2.125']], 7, 'boq');
+$percentage = $validator->validate(['certificate_date' => '2026-09-14', 'quantities' => ['9' => '25'], 'quantity_modes' => ['9' => 'percentage']], 7, 'boq');
+if ($percentage->quantities[9] !== '25.0000' || $percentage->quantityModes[9] !== 'percentage' || $boq->quantityModes[9] !== 'quantity') throw new RuntimeException('Quantity input mode validation failed.');
 if (($boq->quantities[9] ?? null) !== '2.1250' || $boq->currentProgressPercentage !== null) throw new RuntimeException('BOQ certificate validation failed.');
 foreach ([
+    [['certificate_date' => '2026-09-14', 'quantities' => ['9' => '100.0001'], 'quantity_modes' => ['9' => 'percentage']], 'boq'],
+    [['certificate_date' => '2026-09-14', 'quantities' => ['9' => '1'], 'quantity_modes' => ['9' => 'invalid']], 'boq'],
+    [['certificate_date' => '2026-09-14', 'quantities' => 'invalid'], 'boq'],
     [['certificate_date' => 'invalid', 'current_progress_percentage' => '5'], 'lump_sum'],
     [['certificate_date' => '2026-09-14', 'current_progress_percentage' => '100.1'], 'lump_sum'],
     [['certificate_date' => '2026-09-14', 'quantities' => ['9' => '-1']], 'boq'],

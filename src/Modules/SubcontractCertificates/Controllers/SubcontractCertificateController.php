@@ -14,6 +14,7 @@ use App\Core\View\View;
 use App\Modules\AccessControl\Services\AuthorizationService;
 use App\Modules\SubcontractCertificates\Services\SubcontractCertificateService;
 use App\Modules\SubcontractCertificates\Validators\SubcontractCertificateValidator;
+use App\Modules\CompanyProfile\Services\CompanyProfileService;
 
 final class SubcontractCertificateController
 {
@@ -24,6 +25,7 @@ final class SubcontractCertificateController
         private readonly AuthorizationService $authorization,
         private readonly SubcontractCertificateService $service,
         private readonly SubcontractCertificateValidator $validator,
+        private readonly CompanyProfileService $company,
     ) {}
 
     public function index(Request $request): Response
@@ -60,6 +62,16 @@ final class SubcontractCertificateController
     }
 
     public function store(Request $request): Response { return $this->save($request, null, (int) $request->route('subcontract_id')); }
+
+    public function print(Request $request): Response
+    {
+        return Response::html($this->view->render('modules/subcontract-certificates/print',[
+            'title'=>'مستخلص أعمال مقاول باطن',
+            ...$this->service->printData((int)$request->route('id')),
+            'company'=>$this->company->get(),
+            'companyLogo'=>$this->company->logoDataUri(),
+        ],'layouts/certificate-print'));
+    }
 
     public function update(Request $request): Response
     {

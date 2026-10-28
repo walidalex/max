@@ -42,6 +42,8 @@ The Cost Structure module manages work sections, cost codes, and units through t
 
 ## Client contracts
 
+The directory uses a single expandable project listing. Its four-step creation wizard always creates a new project with a main contract, coordinating existing Projects and Client Contracts services through `ProjectContractWizardService`. Both creation permissions are required. Saves share one transaction; `Database::transaction()` uses savepoints for nested calls so an inner service cannot commit the outer workflow. The wizard derives the contract client from the project and preserves input when validation fails. See `src/Modules/ClientContracts/README.md` for workflow rules.
+
 Client Contracts owns the single main agreement header for each project. Internal codes use a yearly atomic sequence based on the contract date. Project, client, and contact consistency is repeated server-side. Commercial fields become immutable after draft activation, while future commercial changes belong to addendums. Projects with a contract cannot change client through normal project editing.
 
 ## Contract variations
@@ -65,7 +67,7 @@ Architectural invariant: cumulative subcontractor payments must never exceed cum
 ## Subcontract payments
 
 `SubcontractPayments` consumes approved entitlement from `SubcontractCertificates` and never creates or modifies progress. Posting uses the subcontract row as the shared financial lock, re-reads entitlement and posted totals, freezes snapshots, and enforces `cumulative posted payments <= cumulative approved earned value` in one transaction.
-Client Progress Statements use the Client Contract row as the shared financial lock. Cost Plus approval re-reads approved Project Actual Costs and approved Variations, calculates with SQL DECIMAL, freezes snapshots, commits allocations, and allocates the per-contract statement sequence in one transaction.
+Client Progress Statements use the Client Contract row as the shared financial lock. Cost Plus approval adds unbilled approved subcontract execution at frozen agreed prices to selected approved Project Actual Costs outside that scope, then applies the client contract markup. It locks subcontract rows while reading certificate execution, deducts prior billed execution from the client statement snapshot, revalidates costs and Variations, calculates with SQL DECIMAL, freezes snapshots, commits allocations, and allocates the per-contract statement sequence in one transaction. Linked subcontract actual-cost rows cannot be billed separately a second time. Date changes refresh the draft preview through an authorized read-only endpoint.
 
 ## Client receipts
 

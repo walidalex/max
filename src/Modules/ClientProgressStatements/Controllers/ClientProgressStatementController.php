@@ -10,6 +10,7 @@ use App\Core\Http\Session;
 use App\Core\View\View;
 use App\Modules\ClientProgressStatements\Services\ClientProgressStatementService;
 use App\Modules\ClientProgressStatements\Validators\ClientProgressStatementValidator;
+use App\Modules\ClientProgressStatements\Validators\StatementContractSelectionValidator;
 final class ClientProgressStatementController
 {
     public function __construct(
@@ -19,6 +20,7 @@ final class ClientProgressStatementController
         private readonly Csrf $csrf,
         private readonly Session $session,
         private readonly AuthorizationService $authorization,
+        private readonly StatementContractSelectionValidator $selectionValidator,
     ) {}
     public function global(Request $r): Response
     {
@@ -28,24 +30,46 @@ final class ClientProgressStatementController
     {
         return $this->listing((int) $r->route("contract_id"));
     }
+    public function selectContract(Request $request): Response
+    {
+        $errors = [];
+        if ($request->input('contract_id') !== null || $request->input('project_id') !== null) {
+            try {
+                $id = $this->service->selectCreationContract($this->selectionValidator->validate($request->all()));
+                return Response::redirect('/client-contracts/'.$id.'/progress-statements/create');
+            } catch (ValidationException | BusinessRuleException $exception) {
+                $errors = $exception instanceof ValidationException ? $exception->errors : ['contract_id'=>[$exception->getMessage()]];
+            }
+        }
+        return Response::html($this->view->render('modules/client-progress-statements/select-contract', [
+            'title'=>'إنشاء مستخلص عميل',
+            'contracts'=>$this->service->creationContracts(),
+            'old'=>$request->all(),
+            'errors'=>$errors,
+        ]), $errors === [] ? 200 : 422);
+    }
     private function listing(?int $id): Response
     {
         $contract = $id ? $this->service->contract($id) : null;
+        $canCreate = $this->authorization->can('client_progress_statements.create');
+        if ($contract && $canCreate) {
+            try { $this->service->creationContract((int)$contract['id']); }
+            catch (BusinessRuleException) { $canCreate = false; }
+        }
         return Response::html(
             $this->view->render("modules/client-progress-statements/index", [
                 "title" => "مستخلصات العملاء",
                 "contract" => $contract,
                 "contractId" => $id,
                 "references" => $this->service->references(),
-                "canCreate" => $this->authorization->can(
-                    "client_progress_statements.create",
-                ),
+                "scopeRows" => $contract?$this->service->scopeRows((int)$contract['id'],date('Y-m-d')):[],
+                "canCreate" => $canCreate,
             ]),
         );
     }
     public function create(Request $r): Response
     {
-        $contract = $this->service->contract((int) $r->route("contract_id"));
+        $contract = $this->service->creationContract((int) $r->route("contract_id"));
         $date = date("Y-m-d");
         return $this->form(
             $contract,
@@ -59,6 +83,32 @@ final class ClientProgressStatementController
             ),
             $contract['pricing_method']==='boq'?$this->service->getBoqItemsForContract((int)$contract['id']):[],
         );
+    }
+    public function preview(Request $request): Response
+    {
+        if (!$this->authorization->can('client_progress_statements.create') && !$this->authorization->can('client_progress_statements.edit')) {
+            return Response::json(['message'=>'ليس لديك صلاحية إنشاء أو تعديل المستخلص.'],403);
+        }
+        try {
+            $data=$this->validator->validate(['statement_date'=>$request->input('statement_date')]);
+            $contract=$this->service->creationContract((int)$request->route('contract_id'));
+            $statementId=null;
+            if ($request->input('statement_id') !== null && $request->input('statement_id') !== '') {
+                $value=filter_var($request->input('statement_id'),FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
+                if ($value === false) throw new BusinessRuleException('المستخلص المحدد غير صالح.');
+                $statement=$this->service->find($value);
+                if ((int)$statement['client_contract_id'] !== (int)$contract['id'] || $statement['status'] !== 'draft') throw new BusinessRuleException('يمكن تحديث معاينة مسودة تابعة للعقد فقط.');
+                $statementId=$value;
+            }
+            $rows=$this->service->scopeRows((int)$contract['id'],$data->statementDate,$statementId);
+            $costs=$this->service->getEligibleActualCostsForContract((int)$contract['id'],$data->statementDate);
+            return Response::json([
+                'scopeHtml'=>$this->view->component('cost-plus-scope-table',['scopeRows'=>$rows]),
+                'costsHtml'=>$this->view->component('client-statement-costs',['costs'=>$costs]),
+            ]);
+        } catch (ValidationException | BusinessRuleException $exception) {
+            return Response::json(['message'=>$exception instanceof BusinessRuleException?$exception->getMessage():'تاريخ المستخلص غير صالح.'],422);
+        }
     }
     public function store(Request $r): Response
     {
@@ -142,6 +192,7 @@ final class ClientProgressStatementController
                 "costs" => $costs,
                 "variations" => $vars,
                 "boqItems" => $boqItems,
+                "scopeRows" => $this->service->scopeRows((int)$c['id'],(string)($s['statement_date']??date('Y-m-d')),$s===null?null:(int)$s['id']),
             ]),
         );
     }
@@ -161,7 +212,7 @@ final class ClientProgressStatementController
                 "تم الحفظ",
                 $id
                     ? "تم تحديث مسودة المستخلص."
-                    : "تم إنشاء المسودة. اختر التكاليف والتعديلات ثم احفظها.",
+                    : "تم إنشاء مسودة المستخلص.",
             );
             return Response::redirect(
                 "/client-progress-statements/" . $saved . "/edit",

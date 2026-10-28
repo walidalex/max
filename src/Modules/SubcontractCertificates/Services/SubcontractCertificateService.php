@@ -65,7 +65,15 @@ final class SubcontractCertificateService
             }
             if ($subcontract['pricing_method'] === 'boq') {
                 if ($this->certificates->submittedItemCount($id, array_keys($data->quantities)) !== count($data->quantities)) throw new BusinessRuleException('أحد البنود لا يتبع BOQ هذا العقد.');
-                $this->certificates->updateQuantities($id, $data->quantities);
+                $quantities = $data->quantities;
+                foreach ($this->certificates->items($id) as $item) {
+                    $itemId = (int) $item['subcontract_boq_item_id'];
+                    if (($data->quantityModes[$itemId] ?? 'quantity') !== 'percentage') continue;
+                    if ($item['pricing_type_snapshot'] !== 'quantity') throw new BusinessRuleException('اختيار نسبة إجمالية متاح للبنود الكمية فقط.');
+                    $quantities[$itemId] = $this->certificates->quantityFromCumulativePercentage((string) $item['contract_quantity'], $quantities[$itemId], (string) $item['live_previous_quantity'])
+                        ?? throw new BusinessRuleException('نسبة الإنجاز الإجمالية لا يمكن أن تقل عن التنفيذ المعتمد سابقًا.');
+                }
+                $this->certificates->updateQuantities($id, $quantities);
             }
             return $id;
         });
@@ -95,6 +103,7 @@ final class SubcontractCertificateService
                 if ($this->certificates->invalidBoqItemCount($id) > 0) throw new BusinessRuleException('الكمية التراكمية تتجاوز الكمية التعاقدية لأحد البنود.');
                 if ($this->certificates->positiveBoqItemCount($id) < 1) throw new BusinessRuleException('يجب إدخال كمية حالية موجبة لبند واحد على الأقل.');
                 $this->certificates->approveBoq($id, $userId, $this->certificates->boqTotals($id));
+                $this->freezePrintSnapshot($id);
                 return;
             }
 
@@ -103,6 +112,7 @@ final class SubcontractCertificateService
             $previous = $this->certificates->approvedLumpProgress((int) $subcontract['id']);
             if ($this->certificates->lumpProgressExceeds($previous, $current)) throw new BusinessRuleException('نسبة التقدم التراكمية تتجاوز 100٪.');
             $this->certificates->approveLump($id, $userId, $previous, (string) $subcontract['contract_value']);
+            $this->freezePrintSnapshot($id);
         });
     }
 
@@ -141,5 +151,33 @@ final class SubcontractCertificateService
         $this->subcontract($query->subcontractId);
         $result = $this->certificates->dataTable($query);
         return ['draw' => $query->draw, 'recordsTotal' => $result['recordsTotal'], 'recordsFiltered' => $result['recordsFiltered'], 'data' => $result['rows']];
+    }
+
+    private function freezePrintSnapshot(int $id): void
+    {
+        $certificate=$this->find($id);
+        $this->certificates->savePrintSnapshot($id,[
+            'identity'=>$this->certificates->printIdentity((int)$certificate['subcontract_id']),
+            'payments'=>$this->certificates->printPayments((int)$certificate['subcontract_id']),
+            'totals'=>$this->certificates->printTotals($id),
+        ]);
+    }
+
+    public function printData(int $id): array
+    {
+        return $this->db->transaction(function() use($id):array{
+            $probe=$this->find($id);
+            $this->certificates->subcontract((int)$probe['subcontract_id'],true);
+            $certificate=$this->find($id);
+            $snapshot=empty($certificate['print_snapshot'])?null:json_decode($certificate['print_snapshot'],true,512,JSON_THROW_ON_ERROR);
+            return [
+                'certificate'=>$certificate,
+                'identity'=>$snapshot['identity']??$this->certificates->printIdentity((int)$certificate['subcontract_id']),
+                'payments'=>$snapshot['payments']??$this->certificates->printPayments((int)$certificate['subcontract_id']),
+                'totals'=>$snapshot['totals']??$this->certificates->printTotals($id),
+                'items'=>$this->certificates->printItems($id),
+                'frozen'=>$snapshot!==null,
+            ];
+        });
     }
 }
